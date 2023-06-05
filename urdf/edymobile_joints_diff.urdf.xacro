@@ -1,0 +1,201 @@
+<?xml version='1.0'?>
+<robot name="Edymobile" xmlns:xacro="http://ros.org/wiki/xacro">
+
+	<material name="white">
+		<color rgba="1 1 1 1"/>
+	</material>
+		
+   <link name="base_link" />
+   <!-- ********************** ROBOT BASE *********************************  -->
+   <link name="base_center" >
+	<visual>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+		<cylinder radius="0.125" length="0.11"/>
+	</geometry>
+	<material name="white"/>
+	</visual>
+	<collision>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+		<cylinder radius="0.125" length="0.11"/>
+	</geometry>
+	</collision>
+	<inertial>
+		<mass value="3"/>
+		<inertia ixx="0.0147" ixy="0.0" ixz="0.0" iyy="0.0147" iyz="0.0" izz="0.1875"/>
+	</inertial>
+   </link>
+   <!-- ********************** LEFT WHEEL *********************************  -->
+   <link name="left_wheel" >
+	<visual>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<cylinder radius="0.0225" length="0.02"/>
+	</geometry>
+	</visual>
+	<collision>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<cylinder radius="0.0225" length="0.02"/>
+	</geometry>
+	</collision>
+	<inertial>
+		<mass value="0.5"/>
+		<inertia ixx="0.00080" ixy="0.0" ixz="0.0" iyy="0.00080" iyz="0.0" izz="0.000266"/>
+	</inertial>
+   </link>
+   <!-- ********************** RIGHT WHEEL *********************************  -->
+   <link name="right_wheel" >
+	<visual>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<cylinder radius="0.0225" length="0.02"/>
+	</geometry>
+	</visual>
+	<collision>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<cylinder radius="0.0225" length="0.02"/>
+	</geometry>
+	</collision>
+	<inertial>
+		<mass value="0.5"/>
+		<inertia ixx="0.00080" ixy="0.0" ixz="0.0" iyy="0.00080" iyz="0.0" izz="0.000266"/>
+	</inertial>
+   </link>
+   <!-- ********************** BALL 1 *********************************  -->
+   <link name="ball_1" >
+	<visual>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<sphere radius="0.0225"/>
+	</geometry>
+	</visual>
+	<collision>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+		<sphere radius="0.0225"/>
+	</geometry>
+	</collision>
+	<inertial>
+		<mass value="0.2"/>
+		<inertia ixx="0.0000125" ixy="0.0" ixz="0.0" iyy="0.0000125" iyz="0.0" izz="0.0000125"/>
+	</inertial>
+   </link>
+   <!-- ********************** BALL 2 *********************************  -->
+   <link name="ball_2" >
+	<visual>
+	<origin xyz="0 0 0" rpy="1.5707 -0 0"/>
+	<geometry>
+		<sphere radius="0.0225"/>
+	</geometry>
+	</visual>
+	<collision>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+		<sphere radius="0.0225"/>
+	</geometry>
+	</collision>
+	<inertial>
+		<mass value="0.2"/>
+		<inertia ixx="0.0000125" ixy="0.0" ixz="0.0" iyy="0.0000125" iyz="0.0" izz="0.0000125"/>
+	</inertial>
+  </link>
+   
+  <gazebo reference="$ball_1">
+	  <mu1 value="0"/>
+	  <mu2 value="0"/>
+  </gazebo>
+  <gazebo reference="$ball_2">
+	  <mu1 value="0"/>
+	  <mu2 value="0"/>
+  </gazebo>
+  
+   <!-- ********************** JOINTS *********************************  -->
+  <joint name="joint0" type="fixed">
+   	<parent link="base_link"/>
+   	<child link="base_center"/>
+   	<origin xyz="0 0 0.05" rpy="0 0 0"/>
+  </joint>
+   
+  <joint name="left_wheel_joint" type="continuous">
+   	<parent link="base_center"/>
+   	<child link="left_wheel"/>
+   	<origin xyz="0 -0.126 -0.0425"/>
+      	<axis xyz="0 1 0"/>
+	<limit effort="-1" velocity ="-1"/>
+	<dynamics spring_reference="0" spring_stiffness="0" damping ="0"/>
+  </joint>
+  
+  <transmission name="left_wheel_transmission">
+	<type>transmission_interface/SimpleTransmission</type>
+	<actuator name="$left_wheel_actuator">
+		<mechanicalReduction>1</mechanicalReduction>
+		<hardwareInterface>VelocityJointInterface</hardwareInterface>
+	</actuator>
+	<joint name="left_wheel_joint">
+		<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+	</joint>
+  </transmission>
+  
+
+  
+  <gazebo reference="$left_wheel">
+	  <mu1 value="200.0"/>
+	  <mu2 value="100.0"/>
+	  <kp value="10000000.0" />
+	  <kd value="1.0" />
+  </gazebo>
+  
+  <joint name="right_wheel_joint" type="continuous">
+  	<parent link="base_center"/>
+  	<child link="right_wheel"/>
+  	<origin xyz="0 0.126 -0.0425"/>
+      	<axis xyz="0 1 0"/>
+	<limit  effort="-1" velocity ="-1"/>
+	<dynamics spring_reference="0" spring_stiffness="0" damping ="0"/>
+  </joint>
+  
+  <transmission name="right_wheel_transmission">
+	<type>transmission_interface/SimpleTransmission</type>
+	<actuator name="$right_wheel_actuator">
+		<mechanicalReduction>1</mechanicalReduction>
+		<hardwareInterface>VelocityJointInterface</hardwareInterface>
+	</actuator>
+	<joint name="right_wheel_joint">
+	<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+	</joint>
+  </transmission>
+  
+
+  
+  <gazebo reference="$right_wheel">
+	  <mu1 value="200.0"/>
+	  <mu2 value="100.0"/>
+	  <kp value="10000000.0" />
+	  <kd value="1.0" />
+  </gazebo>
+   
+  
+  <joint name="joint3" type="fixed">
+  	<parent link="base_center"/>
+  	<child link="ball_1"/>
+  	<origin xyz="-0.08 0 -0.0425" rpy="0 0 0"/>
+  </joint>
+  
+  <joint name="joint4" type="fixed">
+  	<parent link="base_center"/>
+  	<child link="ball_2"/>
+  	<origin xyz="0.08 0 -0.0425" rpy="0 0 0"/>
+  </joint>
+  
+
+  
+  <gazebo>
+  <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+  	<robotNamespace>/edymobile</robotNamespace>
+   </plugin>
+   </gazebo>
+   
+</robot>

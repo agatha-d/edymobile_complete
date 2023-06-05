@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<launch>
+  <rosparam file="$(find edymobile)/config/edy_controller.yaml" command="load" ns="/edymobile/diff_drive_controller"/>
+  <rosparam file="$(find edymobile)/config/joints.yaml" command="load" ns="/edymobile/joint_state_controller"/>
+  <param name="robot_description" command="cat '$(find edymobile)/urdf/edymobile_joints_diff.urdf.xacro'" />
+  
+  <arg name="model" default="$(find edymobile)/urdf/edymobile_joints_diff.urdf.xacro"/>
+  <arg name="rvizconfig" default="$(find edymobile)/rviz/edy_world.rviz" />
+  
+
+  <arg name="map_file" value="/$(find edymobile)/maps/circuit.yaml">
+  </arg> 
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"> 
+  	<param name="frame_id" value="map" />
+  </node> 
+  
+    <!-- Transformation Configuration ... Setting Up the Relationships Between Coordinate Frames --> 
+  <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0.053 0 0 0 base_link base_center 30" />
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_broadcaster" args="-2 4 0 1.5707 0 0 map odom 30" />
+
+
+  <include file="$(find edymobile)/launch/gazebo_swisscat_world.launch">
+    <arg name="model" value="$(arg model)" />
+  </include>
+  
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" />
+  
+    <!-- load the controllers -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+    output="screen" ns="/edymobile" args="diff_drive_controller joint_state_controller"/>
+    
+
+ 
+  <!-- convert joint states to TF transforms for rviz, etc -->
+  <!--
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+    respawn="false" output="screen">
+    <remap from="/joint_states" to="/edymobile/joint_states" />
+  </node>
+  
+
+  <rosparam command="load"
+            file="$(find edymobile)/config/joints.yaml"
+            ns="edy_joint_state_controller" />
+  <rosparam command="load"
+            file="$(find edymobile)/config/diff_drive.yaml"
+            ns="edy_diff_drive_controller" />
+
+  <node name="edy_controller_spawner" pkg="controller_manager" type="spawner"
+    args="edy_joint_state_controller
+          edy_diff_drive_controller
+          shutdown-timeout 3"/>
+  
+
+  <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
+    <param name="default_topic" value="/edy_diff_drive_controller/cmd_vel"/>
+  </node>
+  -->
+  
+    <!-- rqt_plot monitoring -->
+  <!--
+  <node name="diffbot_pos_monitor"
+        pkg="rqt_plot"
+        type="rqt_plot"
+        args="/diffbot_controller/odom/pose/pose/position/x" />
+  <node name="diffbot_vel_monitor"
+        pkg="rqt_plot"
+        type="rqt_plot"
+        args="/diffbot_controller/odom/twist/twist/linear/x" />
+  -->
+  
+</launch>

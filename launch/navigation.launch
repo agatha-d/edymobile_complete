@@ -1,0 +1,59 @@
+<launch>
+
+
+<param name="/use_sim_time" value="true"/>
+
+<arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+
+ 
+  <group ns="robot1">
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+    <arg name="model" value="$(arg model)" />
+    <arg name="multi_robot_name" default="robot1_tf"/>
+    </include>
+  </group>
+
+  <group ns="robot2">
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+    <arg name="model" value="$(arg model)" />
+    <arg name="multi_robot_name" default="robot2_tf"/>
+    </include>
+  </group>
+
+  <group ns="robot3">
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+    <arg name="model" value="$(arg model)" />
+    <arg name="multi_robot_name" default="robot3_tf"/>
+    </include>
+  </group>
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find projet_semestre)/navigation/maps/circuit.yaml" >
+    <param name="frame_id" value="map" />
+  </node>
+
+
+<!-- Properties of each robot      -->
+
+  <!-- AMCL      -->
+
+    <include file="$(find projet_semestre)/navigation/launch/amcl_robot1.launch" />
+    <include file="$(find projet_semestre)/navigation/launch/amcl_robot2.launch" />
+    <include file="$(find projet_semestre)/navigation/launch/amcl_robot3.launch" />
+
+
+<!-- MOVE_BASE-->
+
+    <include file="$(find projet_semestre)/navigation/launch/move_base_1.launch" />
+    <include file="$(find projet_semestre)/navigation/launch/move_base_2.launch" />
+    <include file="$(find projet_semestre)/navigation/launch/move_base_3.launch" />
+
+
+
+
+  <!-- node pkg="rviz" type="rviz" name="rviz" /-->
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find projet_semestre)/navigation/rviz/navigation.rviz" />
+
+
+</launch>

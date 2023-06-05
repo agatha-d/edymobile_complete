@@ -1,0 +1,13 @@
+local_costmap:
+  # Coordinate frame and tf parameters
+  transform_tolerance:      0.2   #  0.2
+
+  # Rate parameters
+  update_frequency:         5.0   #  5.0
+  publish_frequency:        5.0   #  5.0
+
+  # Map management parameters
+  rolling_window:           true #  false
+  always_send_full_costmap: false #  false
+  width: 10.0
+  height: 10.0

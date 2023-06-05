@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="model" default="$(find edymobile)/urdf/edymobile_joints.urdf.xacro"/>
+  <arg name="rvizconfig" default="$(find edymobile)/rviz/edy_world.rviz" />
+  
+  
+  <arg name="map_file" value="/$(find edymobile)/maps/circuit.yaml">
+  </arg> 
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"> 
+  	<param name="frame_id" value="map" />
+  </node> 
+  
+  <!-- Transformation Configuration ... Setting Up the Relationships Between Coordinate Frames --> 
+  <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0.053 0 0 0 base_link base_center 30" />
+  <!--node pkg="tf" type="static_transform_publisher" name="imu_broadcaster" args="-0.0315 0 0.033 0 0 0 base_link imu 30" /-->
+  <!-- odom to base_footprint transform will be provided by the robot_pose_ekf node -->
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom_broadcaster" args="0 0 0 0 0 0 map odom 30" />
+
+  <include file="$(find edymobile)/launch/gazebo_swisscat_world.launch">
+    <arg name="model" value="$(arg model)" />
+    <arg name="rvizconfig" value="$(arg rvizconfig)" />
+  </include>
+
+
+  <rosparam command="load"
+            file="$(find edymobile)/config/joints.yaml"
+            ns="edy_joint_state_controller" />
+
+  
+  <node pkg="simple_controller" type="simple_controller" name="simple_controller">
+  </node>
+	
+  <!-- Initial Pose and Goal Publisher -->
+  <!-- Publish: /initialpose, /move_base_simple/goal -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(arg rvizconfig)">
+  </node> 
+
+
+</launch>
