@@ -1,0 +1,56 @@
+<launch>
+  <!-- No namespace here as we will share this description. 
+       Access with slash at the beginning -->
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <param name="robot_description"
+    command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+
+  <!-- BEGIN ROBOT 1-->
+  <group ns="robot1">
+    <param name="tf_prefix" value="robot1_tf" />
+    <include file="$(find projet_semestre)/simulation/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x -3.18 -y -3.595 -z 0" />
+      <arg name="robot_name"  value="Robot1" />
+    </include>
+  </group>
+
+  <!-- BEGIN ROBOT 2-->
+  <group ns="robot2">
+    <param name="tf_prefix" value="robot2_tf" />
+    <include file="$(find projet_semestre)/simulation/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x -3.18 -y -4.548 -z 0" />
+      <arg name="robot_name"  value="Robot2" />
+    </include>
+  </group>
+
+<!-- BEGIN ROBOT 3-->
+  <group ns="robot3">
+    <param name="tf_prefix" value="robot3_tf" />
+    <include file="$(find projet_semestre)/simulation/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x -1.28 -y 3.07 -z 0" />
+      <arg name="robot_name"  value="Robot3" />
+    </include>
+  </group>
+  
+
+<!-- BEGIN ROBOT 4-->
+  <group ns="robot4">
+    <param name="tf_prefix" value="robot4_tf" />
+    <include file="$(find projet_semestre)/simulation/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x 1.10 -y -3.595 -z 0" />
+      <arg name="robot_name"  value="Robot4" />
+    </include>
+  </group>
+  
+<!-- BEGIN ROBOT 5-->
+  <group ns="robot5">
+    <param name="tf_prefix" value="robot5_tf" />
+    <include file="$(find projet_semestre)/simulation/launch/one_robot.launch" >
+      <arg name="init_pose" value="-x 1.10 -y -4.548 -z 0" />
+      <arg name="robot_name"  value="Robot5" />
+    </include>
+  </group> 
+
+  
+
+</launch>
