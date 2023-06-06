@@ -7,12 +7,12 @@
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
-  <arg name="model" default="$(find edymobile)/urdf/edymobile_joints.urdf.xacro"/>
+  <arg name="model" default="$(find edymobile_complete)/urdf/edymobile_joints.urdf.xacro"/>
   <arg name="init_pose" value="-x -2 -y 4 -z 0 -Y -1.5707" />
-  <arg name="rvizconfig" default="$(find edymobile)/rviz/urdf.rviz" />
+  <arg name="rvizconfig" default="$(find edymobile_complete)/rviz/urdf.rviz" />
   
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find edymobile)/worlds/circuit.world"/>
+    <arg name="world_name" value="$(find edymobile_complete)/worlds/circuit.world"/>
     <arg name="paused" value="$(arg paused)"/>
     <arg name="use_sim_time" value="$(arg use_sim_time)"/>
     <arg name="gui" value="$(arg gui)"/>

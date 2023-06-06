@@ -1,3 +1,4 @@
+<?xml version='1.0'?>
 <launch>
 
 
@@ -28,7 +29,7 @@
   </group>
 
   <!-- Run the map server -->
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find projet_semestre)/navigation/maps/circuit.yaml" >
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find edymobile_complete)/maps/circuit.yaml" >
     <param name="frame_id" value="map" />
   </node>
 
@@ -37,23 +38,23 @@
 
   <!-- AMCL      -->
 
-    <include file="$(find projet_semestre)/navigation/launch/amcl_robot1.launch" />
-    <include file="$(find projet_semestre)/navigation/launch/amcl_robot2.launch" />
-    <include file="$(find projet_semestre)/navigation/launch/amcl_robot3.launch" />
+    <include file="$(find edymobile_complete)/launch/amcl_robot1.launch" />
+    <include file="$(find edymobile_complete)/launch/amcl_robot2.launch" />
+    <include file="$(find edymobile_complete)/launch/amcl_robot3.launch" />
 
 
 <!-- MOVE_BASE-->
 
-    <include file="$(find projet_semestre)/navigation/launch/move_base_1.launch" />
-    <include file="$(find projet_semestre)/navigation/launch/move_base_2.launch" />
-    <include file="$(find projet_semestre)/navigation/launch/move_base_3.launch" />
+    <include file="$(find edymobile_complete)/launch/move_base_1.launch" />
+    <include file="$(find edymobile_complete)/launch/move_base_2.launch" />
+    <include file="$(find edymobile_complete)/launch/move_base_3.launch" />
 
 
 
 
   <!-- node pkg="rviz" type="rviz" name="rviz" /-->
 
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find projet_semestre)/navigation/rviz/navigation.rviz" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find edymobile_complete)/rviz/navigation.rviz" />
 
 
 </launch>

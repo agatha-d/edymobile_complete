@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="model" default="$(find edymobile)/urdf/edymobile_theo.urdf.xacro"/>
-  <arg name="rvizconfig" default="$(find edymobile)/rviz/edy_world.rviz" />
+  <arg name="model" default="$(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro"/>
+  <arg name="rvizconfig" default="$(find edymobile_complete)/rviz/edy_world.rviz" />
   
   
-  <arg name="map_file" value="/$(find edymobile)/maps/circuit.yaml">
+  <arg name="map_file" value="/$(find edymobile_complete)/maps/circuit.yaml">
   </arg> 
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)"> 
   	<param name="frame_id" value="map" />
@@ -17,14 +17,14 @@
   <!-- odom to base_footprint transform will be provided by the robot_pose_ekf node -->
   <node pkg="tf" type="static_transform_publisher" name="map_to_odom_broadcaster" args="0 0 0 0 0 0 map odom 30" />
 
-  <include file="$(find edymobile)/launch/gazebo_swisscat_world.launch">
+  <include file="$(find edymobile_complete)/launch/gazebo_swisscat_world.launch">
     <arg name="model" value="$(arg model)" />
     <arg name="rvizconfig" value="$(arg rvizconfig)" />
   </include>
 
 
   <rosparam command="load"
-            file="$(find edymobile)/config/joints.yaml"
+            file="$(find edymobile_complete)/config/joints.yaml"
             ns="edy_joint_state_controller" />
 
   
@@ -73,11 +73,11 @@
   <!-- Publish: /cmd_vel -->
   <!--
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-    <rosparam file="$(find edymobile)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
-    <rosparam file="$(find edymobile)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find edymobile)/param/local_costmap_params.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find edymobile)/param/global_costmap_params.yaml" command="load" ns="global_costmap" />
-    <rosparam file="$(find edymobile)/param/base_local_planner_params.yaml" command="load" />
+    <rosparam file="$(find edymobile_complete)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find edymobile_complete)/param/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find edymobile_complete)/param/local_costmap_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find edymobile_complete)/param/global_costmap_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find edymobile_complete)/param/base_local_planner_params.yaml" command="load" />
   </node>
   -->
 

@@ -1,9 +1,10 @@
+<?xml version='1.0'?>
 <launch>
   <param name="/use_sim_time" value="true" />
 
   <!-- start world -->
   <node name="gazebo" pkg="gazebo_ros" type="gazebo" 
-   args="$(find projet_semestre)/simulation/worlds/circuit.world" respawn="false" output="screen" />
+   args="$(find edymobile_complete)/worlds/circuit_MAPF_VF.world" respawn="false" output="screen" />
 <!-- VERSION YASMINE
  <node name="gazebo" pkg="gazebo_ros" type="gazebo"
    args="$(find projet_semestre)/simulation/worlds/circuit_MAPF_VF.world" respawn="false" output="screen" />
@@ -13,5 +14,8 @@
   <!-- node name="gazebo_gui" pkg="gazebo" type="gui" respawn="false" output="screen"/ -->
 
   <!-- include our robots -->
-  <include file="$(find projet_semestre)/simulation/launch/robots.launch"/>
+  <include file="$(find edymobile_complete)/launch/robots.launch"/>
+  
+    <!-- launch navigation -->
+  <!--include file="$(find edymobile_complete)/launch/navigation.launch"/-->
 </launch>
