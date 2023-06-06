@@ -1,4 +1,4 @@
-image: /home/yasmine/catkin_ws/src/projet_semestre/navigation/maps/circuit_MAPF.pgm
+image: circuit_MAPF.pgm
 resolution: 0.050000
 origin: [-5.0000, -5.00000, 0.000000]
 negate: 0
