@@ -12,6 +12,13 @@ endif()
 install(DIRECTORY images meshes launch rviz urdf
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-catkin_install_python(PROGRAMS src/sendGoals_multiple.py
+##catkin_install_python(PROGRAMS src/sendGoals_multiple.py
+##   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+## )
+ 
+ ## Mark executable scripts (Python etc.) for installation
+## in contrast to setup.py, you can choose the destination
+ catkin_install_python(PROGRAMS src/generate_goals.py
+#   scripts/my_python_script
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
