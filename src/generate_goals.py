@@ -50,6 +50,7 @@ class Robot():
         self.goal_tempX = 0
         self.goal_tempY = 0
         self.path_gazebo = []
+        self.state_checkpoint = 0 # 0: arrived, 1: on the way
         self.state = 0 # 0: free, 1: has a task
         #self.checkpoint = []
 
@@ -121,7 +122,7 @@ class Robot():
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.pose.orientation.w = 1.0
-
+        self.state_checkpoint = 1
         
         if len(self.path_gazebo)> 1:
             self.path_gazebo.pop(0)
@@ -198,7 +199,7 @@ def task_generator(stations):
     # output: list containing the tasks (indexes) to perform )
     number_station = len(stations)
     # number_task = random.randint(1, number_station)
-    number_task = 2
+    number_task = 4
     #tasks_to_do = random.sample(stations, k=number_task)
 
     tasks_to_do = random.sample(range(0, len(stations)), k=number_task)
@@ -303,18 +304,38 @@ def check_goal(robot, goals):
     print('new goal for', robot.name, 'is', robot.goalX[-1], robot.goalY[-1])
 
 # check checkpoint is reached
-def check_checkpoint(robot):
+def check_checkpoint(current_robot, robots):
     # if the robot is at a radius from the checkpoint, send the next one
-    print('checking pos for robot', robot.name)
+    '''print('checking pos for robot', robot.name)
     print('pos robot', robot.posX_gazebo, robot.posY_gazebo)
     print('pos checkpoint', robot.path_gazebo[0][0], robot.path_gazebo[0][1])
     print('goal temp', robot.goal_tempX, robot.goal_tempY)
     print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
-    print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))
-    #if np.sqrt((robot.posX_gazebo-robot.goal_tempX)**2+(robot.posY_gazebo-robot.goal_tempY)**2)<0.4:
-    if abs(robot.posX_gazebo-robot.goal_tempX)<0.4 and abs(robot.posY_gazebo-robot.goal_tempY)<0.4:
-        print('next checkpoint')
+    print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))'''
+    
+    for robot in robots:
+        print(robot.name)
+        print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
+        print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))
+        if abs(robot.posX_gazebo-robot.goal_tempX)<0.4 and abs(robot.posY_gazebo-robot.goal_tempY)<0.4:
+            print('next checkpoint')
+            robot.state_checkpoint = 0
+        
+
+def send_checkpoint(robots):
+    for robot in robots:
+        if robot.state_checkpoint == 1:
+            print('not there yet')
+            return True
+        
+    for robot in robots:
         robot.send_goal()
+    '''robots[0].send_goal()
+    robots[1].send_goal()
+    robots[2].send_goal()
+    robots[3].send_goal()
+    robots[4].send_goal()'''
+    return True
 
 # Move to next task if all robot are free
 # Check if all robots are free
@@ -507,11 +528,14 @@ if __name__ == '__main__':
 
             # check if checkpoint is reached
             
-            check_checkpoint(robots[0])
-            check_checkpoint(robots[1])
-            check_checkpoint(robots[2])
-            check_checkpoint(robots[3])
-            check_checkpoint(robots[4])
+            check_checkpoint(robots[0], robots)
+            '''check_checkpoint(robots[1], robots)
+            check_checkpoint(robots[2], robots)
+            check_checkpoint(robots[3], robots)
+            check_checkpoint(robots[4], robots)
+
+            check_checkpoint(robots)'''
+            send_checkpoint(robots)
 
             #print(paths)
       

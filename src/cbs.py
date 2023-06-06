@@ -7,7 +7,7 @@ import time as timer
 import heapq
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
 
-DEBUG = False
+DEBUG = True
 
 def normalize_paths(pathA, pathB):
     """
