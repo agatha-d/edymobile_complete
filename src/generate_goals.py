@@ -197,7 +197,7 @@ def import_mapf_instance(filename):
 def task_generator(stations):
     # input: number of station and name of stations
     # output: list containing the tasks (indexes) to perform )
-    number_station = len(stations)
+    '''number_station = len(stations)
     # number_task = random.randint(1, number_station)
     number_task = 4
     #tasks_to_do = random.sample(stations, k=number_task)
@@ -223,7 +223,7 @@ def task_generator(stations):
             station_list.remove(tasks_to_do[i])
             print('Station list', station_list)
             next_tasks_to_do[i] = random.choice(station_list)
-    '''station_list =  [i for i in range(0, len(stations))]
+    station_list =  [i for i in range(0, len(stations))]
     for i in range(0, number_task):
       if next_tasks_to_do[i] in station_list:
         station_list.remove(next_tasks_to_do[i])
@@ -231,9 +231,12 @@ def task_generator(stations):
     for i in range(0, number_task):
         if tasks_to_do[i] == next_tasks_to_do[i]:
             next_tasks_to_do[i] = random.choice(station_list)'''
+    
+    tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
+    tasks_to_do = random.choice(tasks)
+    
    
-    return tasks_to_do, next_tasks_to_do
-
+    return tasks_to_do[0], tasks_to_do[1]
 
 # TASK ALLOCATION
 # input: robots

@@ -23,7 +23,7 @@ print(indexes)
 
 tasks_to_do = ['discovery', 'omni', 'synt']
 
-print(len(tasks_to_do))'''
+print(len(tasks_to_do))
 
 stations = [0, 1 , 2, 3]
 
@@ -39,4 +39,16 @@ for i in range(0, 2):
 for i in range(0, 2):
         if tasks_to_do[i] == next_tasks_to_do[i]:
             print('Same task')
-            next_tasks_to_do[i] = random.choice(station_list)
+            next_tasks_to_do[i] = random.choice(station_list)'''
+
+import random
+
+
+tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
+
+tasks_to_do = random.choice(tasks)
+
+print(tasks[1])
+print(tasks[1][0])
+print(tasks_to_do)
+print(tasks_to_do[0])
