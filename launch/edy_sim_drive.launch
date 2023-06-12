@@ -64,6 +64,7 @@
   <node pkg="localization_data_pub" type="rviz_click_to_2d" name="rviz_click_to_2d">
   </node>   
 
+  <!-- Manual control option -->
   <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
     <param name="default_topic" value="/edymobile/cmd_vel"/>
   </node>

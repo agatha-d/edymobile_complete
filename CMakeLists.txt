@@ -16,9 +16,13 @@ install(DIRECTORY images meshes launch rviz urdf
 ##   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 ## )
  
- ## Mark executable scripts (Python etc.) for installation
+## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS src/generate_goals.py
+#   scripts/my_python_script
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
+  catkin_install_python(PROGRAMS src/edy_controller_node.py
 #   scripts/my_python_script
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
