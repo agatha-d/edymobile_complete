@@ -1,0 +1,48 @@
+<?xml version='1.0'?>
+<launch>
+
+
+<param name="/use_sim_time" value="true"/>
+
+<arg name="model" default="$(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro"/>
+
+<rosparam command="load"
+    file="$(find edymobile_complete)/config/joints.yaml"
+    ns="edy_joint_state_controller" />
+
+
+ 
+
+<!-- Manual control option -->
+<!--node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering"-->
+  <!--param name="default_topic" value="/robot1/cmd_vel"/-->
+<!--/node-->
+  
+  
+
+<group ns="robot1">
+
+	<node pkg="edymobile_complete" type="edy_controller_node.py" name="controller" output="screen"/>
+  
+</group>
+
+<group ns="robot2">
+
+	<node pkg="edymobile_complete" type="edy_controller_node.py" name="controller" output="screen"/>
+  
+</group>
+
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find edymobile_complete)/maps/circuit_MAPF.yaml" >
+    <param name="frame_id" value="map" />
+  </node>
+
+
+
+  <!-- node pkg="rviz" type="rviz" name="rviz" /-->
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find edymobile_complete)/rviz/navigation.rviz" />
+
+
+</launch>

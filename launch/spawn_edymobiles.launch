@@ -1,0 +1,75 @@
+<?xml version='1.0'?>
+<launch>
+  <!-- No namespace here as we will share this description. 
+       Access with slash at the beginning -->
+  <!--arg name="model" default="$(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro"/-->
+  
+
+<arg name="robotNamespace1" value="robot1"/>
+<arg name="robotNamespace2" value="robot2"/>
+<arg name="robotNamespace3" value="robot3"/>
+<arg name="robotNamespace4" value="robot4"/>
+<arg name="robotNamespace5" value="robot5"/>
+
+  
+  <!-- BEGIN ROBOT 1-->
+  <group ns="/robot1">
+    <param name="tf_prefix" value="robot1_tf" />
+    <param name="robot_description"
+       command="$(find xacro)/xacro --inorder $(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro robotNamespace:=$(arg robotNamespace1)"/>
+    <include file="$(find edymobile_complete)/launch/one_robot_with_name.launch" >
+      <arg name="init_pose" value="-x -3.18 -y -3.595 -z 0 -Y 1.5707" />
+      <arg name="robot_name"  value="Robot1" /> 
+      <arg name="robot_description" value="/$(arg robotNamespace1)/robot_description" />
+    </include>
+  </group>
+  
+  <!-- BEGIN ROBOT 2-->
+  <group ns="/robot2">
+    <param name="tf_prefix" value="robot2_tf" />
+    <param name="robot_description"
+       command="$(find xacro)/xacro --inorder $(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro robotNamespace:=$(arg robotNamespace2)"/>
+    <include file="$(find edymobile_complete)/launch/one_robot_with_name.launch" >
+      <arg name="init_pose" value="-x -3.18 -y -4.548 -z 0 -Y 1.5707" />
+      <arg name="robot_name"  value="Robot2" /> 
+      <arg name="robot_description" value="/$(arg robotNamespace2)/robot_description" />
+    </include>
+  </group>
+  
+  <!-- BEGIN ROBOT 3-->
+  <group ns="/robot3">
+    <param name="tf_prefix" value="robot3_tf" />
+    <param name="robot_description"
+       command="$(find xacro)/xacro --inorder $(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro robotNamespace:=$(arg robotNamespace3)"/>
+    <include file="$(find edymobile_complete)/launch/one_robot_with_name.launch" >
+      <arg name="init_pose" value="-x -1.28 -y 3.07 -z 0 -Y 1.5707" />
+      <arg name="robot_name"  value="Robot3" />
+      <arg name="robot_description" value="/$(arg robotNamespace3)/robot_description" />
+    </include>
+  </group>
+  
+<!-- BEGIN ROBOT 4-->
+  <group ns="/robot4">
+    <param name="tf_prefix" value="robot4_tf" />
+    <param name="robot_description"
+       command="$(find xacro)/xacro --inorder $(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro robotNamespace:=$(arg robotNamespace4)"/>
+    <include file="$(find edymobile_complete)/launch/one_robot_with_name.launch" >
+      <arg name="init_pose" value="-x 1.10 -y -3.595 -z 0 -Y 1.5707" />
+      <arg name="robot_name"  value="Robot4" />
+      <arg name="robot_description" value="/$(arg robotNamespace4)/robot_description" />
+    </include>
+  </group>
+  
+<!-- BEGIN ROBOT 5-->
+  <group ns="/robot5">
+    <param name="tf_prefix" value="robot5_tf" />
+    <param name="robot_description"
+       command="$(find xacro)/xacro --inorder $(find edymobile_complete)/urdf/edymobile_theo.urdf.xacro robotNamespace:=$(arg robotNamespace5)"/>
+    <include file="$(find edymobile_complete)/launch/one_robot_with_name.launch" >
+      <arg name="init_pose" value="-x 1.10 -y -4.548 -z 0 -Y 1.5707" />
+      <arg name="robot_name"  value="Robot5" />
+      <arg name="robot_description" value="/$(arg robotNamespace5)/robot_description" />
+    </include>
+  </group> 
+
+</launch>

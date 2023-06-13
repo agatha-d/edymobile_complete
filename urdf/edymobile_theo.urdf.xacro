@@ -11,6 +11,7 @@
     <xacro:property name="mass_p" value="$(arg mass)"/>
     <xacro:property name="body_mass" value="${mass_p * 0.80}"/>
     <xacro:property name="wheel_mass" value="${mass_p * 0.10}"/>
+    <xacro:arg name="robotNamespace" default="/edymobile" />
 
 
    <link name="base_link" />
@@ -202,7 +203,7 @@
 			<odometryTopic>odom</odometryTopic>
 			<odometryFrame>odom</odometryFrame>
 			<robotBaseFrame>base_link</robotBaseFrame>
-			<robotNamespace>/edymobile</robotNamespace>
+			<robotNamespace>$(arg robotNamespace)</robotNamespace>
 		</plugin>
 	</gazebo>
    
