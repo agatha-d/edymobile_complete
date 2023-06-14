@@ -54,7 +54,7 @@ class Robot():
         self.path_gazebo = []
         self.state_checkpoint = 0 # 0: arrived, 1: on the way
         self.state = 0 # 0: free, 1: has a task
-        #self.checkpoint = []
+        self.checkpoint = []
 
         # ROS Publisher for sending goal to controller
         self.pub = rospy.Publisher('/' +self.name+ '/move_base/goal',MoveBaseGoal, queue_size=10)
@@ -196,7 +196,7 @@ def task_generator(stations):
     '''
     #tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
     #tasks_to_do = random.choice(tasks)
-    tasks_to_do = [[0,3],[1,2]]
+    tasks_to_do = [[2],[1]]
    
     return tasks_to_do[0], tasks_to_do[1]
 
@@ -261,7 +261,7 @@ def get_smallest_path_len_without_change_dir(robots):
     for robot in robots:
         for i in range(0, len(robot.path)-1):
             # If there is a change of direction in the path
-            if abs(robot.path[i][0]- robot.path[i+1][0]) < EPSILON or abs(robot.path[i][1] -robot.path[i+1][1]) < EPSILON:
+            if abs(robot.path[i][0]- robot.path[i+1][0]) <  EPSILON or abs(robot.path[i][1] -robot.path[i+1][1]) < EPSILON:
                 # keep the index of the first change in direction among all paths
                 idx = min(i,idx)
                 print('Smaller Change of dir at index:')
@@ -286,6 +286,7 @@ def check_goal(robot, goals):
     if len(robot.goalX) > 1:
         robot.goalX.pop(-1)
         robot.goalY.pop(-1)
+        robot.state = 1
     # add the new goal in goals_allocation
     goals[robot.id]=(robot.goalX[-1], robot.goalY[-1])
     print('new goal for', robot.name, 'is', robot.goalX[-1], robot.goalY[-1])
@@ -300,7 +301,7 @@ def check_checkpoint(current_robot, robots):
         print(robot.name)
         print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
         print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))
-        if (abs(robot.posX_gazebo-robot.goal_tempX)<0.5 and abs(robot.posY_gazebo-robot.goal_tempY)<0.5) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.1:
+        if (abs(robot.posX_gazebo-robot.goal_tempX)<0.4 and abs(robot.posY_gazebo-robot.goal_tempY)<0.4) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.2:
             print('next checkpoint')
             robot.state_checkpoint = 0
         
@@ -334,15 +335,15 @@ def checkpoint_generator(robot):
     '''
     Create checkpoint from the path of the robot where the direction changes
     '''
-    checkpoint = []
-    checkpoint.append(robot.path[0])
+    change_dir = []
+    change_dir.append(robot.path[0])
     for i in range(len(robot.path)-2):
         if  (robot.path[i+1][0]-robot.path[i][0])*(robot.path[i+2][0]-robot.path[i+1][0])+(robot.path[i+1][1]-robot.path[i][1])*(robot.path[i+2][1]-robot.path[i+1][1]) == 0:
-            checkpoint.append(robot.path[i+1])
-    checkpoint.append(robot.path[-1])
-    robot.path.clear()
-    #robot.change_direction()
-    robot.path = checkpoint.copy()
+            change_dir.append(robot.path[i+1])
+    change_dir.append(robot.path[-1])
+    #robot.path.clear()
+    #robot.path = checkpoint.copy()
+    return change_dir
 
 
 def check_boundaries(X, Y, my_map):

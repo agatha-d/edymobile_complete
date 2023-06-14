@@ -19,12 +19,6 @@ global tot_error
 tot_error = 0.0
 
 
-# for saving error plots and check if trajectory diverges from a straight line
-error_plots = True
-vel_errors = []
-pos_errors = []
-times = []
-current_dir = os.getcwd()
 
 class DiffDriveRobot:
 
@@ -72,14 +66,16 @@ class DiffDriveRobot:
         # Calculate the linear error
         self.dist_to_goal = math.sqrt((self.target_x - self.x)**2 + (self.target_y - self.y)**2)
 
-        rospy.loginfo(self.robot_name+': New x target: '+ str(self.target_x))
-        rospy.loginfo(self.robot_name+': New y target: '+str(self.target_y))
         rospy.loginfo(self.robot_name+': Current x: '+str(self.x))
-        rospy.loginfo(self.robot_name+': Current y: '+str(self.y))
-        rospy.loginfo(self.robot_name+': distance to goal: '+str(self.dist_to_goal))
+        rospy.loginfo(self.robot_name+': New x target: '+ str(self.target_x))
 
-        #use same condition as fleet manager
-        if abs(self.target_x - self.x)>0.5 or abs(self.target_y - self.y)>0.5 or min(abs(self.target_y - self.y), abs(self.target_x - self.x))>0.1: #self.dist_to_goal > 0.4:
+        rospy.loginfo(self.robot_name+': Current y: '+str(self.y))
+        rospy.loginfo(self.robot_name+': New y target: '+str(self.target_y))
+        
+        #rospy.loginfo(self.robot_name+': distance to goal: '+str(self.dist_to_goal))
+
+        # use same condition as fleet manager
+        if abs(self.target_x - self.x)>0.4 or abs(self.target_y - self.y)>0.4 or min(abs(self.target_y - self.y), abs(self.target_x - self.x))>0.2: #self.dist_to_goal > 0.4:
 
             # Calculate the heading to the target
             heading = math.atan2(self.target_y - self.y, self.target_x - self.x)
@@ -99,11 +95,12 @@ class DiffDriveRobot:
 
             rospy.loginfo(self.robot_name+': angular error: '+ str(alpha))
 
-            tot_error += alpha
+            #tot_error += alpha
 
             # Move backwards if the goal is behind the robot
-            if abs(alpha)>math.pi/2:
+            if abs(alpha)>0.8*math.pi:
                 v_des = -self.v_desired
+                rospy.loginfo(self.robot_name+' Should move backwards')
             else:
                 v_des = self.v_desired
             
@@ -111,33 +108,21 @@ class DiffDriveRobot:
             # TODO: get true vel from robot data instead of vel command
             v_error = v_des - self.cmd_vel.linear.x 
 
-            #rospy.loginfo('vel error')
-            #rospy.loginfo(v_error)
-            '''
-            if error_plots:
-                vel_errors.append(v_error)
-                arr = np.array([x-target_x, y-target_y])
-                min_idx = np.argmin(abs(arr))
-                pos_errors.append(arr[min_idx])
-            '''
                 
             change_dir = (abs(alpha)>0.05*math.pi/2 and abs(alpha)<0.8*math.pi)
             #if not change_dir and abs(alpha)>math.pi/2: #move backwards if goal is behind
             #    alpha = math.pi-alpha
 
-            #rospy.loginfo('change dir?')
-            rospy.loginfo(self.robot_name+': cond1 ? '+str(abs(alpha)>0.05*math.pi/2))
-            rospy.loginfo(self.robot_name+': cond2 ? '+str(abs(alpha)<0.8*math.pi/2))
+            #rospy.loginfo(self.robot_name+': cond1 ? '+str(abs(alpha)>0.05*math.pi/2))
+            #rospy.loginfo(self.robot_name+': cond2 ? '+str(abs(alpha)<0.8*math.pi/2))
             rospy.loginfo(self.robot_name+': change dir ? '+str(change_dir))
 
             self.cmd_vel.linear.x = (v_des + self.Kv*v_error)*(not change_dir) #+ change_dir*np.sign(v_des)*self.Kv/100 #only apply linear vel if aligned enough with target to avoid avershoot of trajectory at changes in direction
-            self.cmd_vel.angular.z = -self.Ka*(alpha+4*np.sign(alpha)*change_dir) + self.ki*tot_error #angular correction, turn more if change in direction
+            self.cmd_vel.angular.z = -self.Ka*(alpha+4*np.sign(alpha)*change_dir)*np.sign(v_des) #+ self.ki*tot_error #angular correction, turn more if change in direction
             
-            #rospy.loginfo('in compute vel function')
-            #rospy.loginfo(self.cmd_vel.linear.x)
 
             # Adjust the angular velocity to maintain approximately constant linear velocity
-            if self.dist_to_goal < 0.5:
+            if self.dist_to_goal < 0.5 and not change_dir:
             #    rospy.loginfo('Angular vel adjustment')
                 self.cmd_vel.angular.z = self.cmd_vel.angular.z*(self.dist_to_goal/0.5)
 
@@ -147,14 +132,6 @@ class DiffDriveRobot:
             self.goal_reached = True
             self.set_cmd_vel(0,0)
             tot_error = 0
-            #vel_fig = plt.figure()
-            #plt.plot(vel_errors)
-            #plt.show()
-            #vel_fig.savefig(current_dir+'/catkin_ws/src/edymobile/edy_controller/figures/vel_error_'+str(target_id)+'.png')
-            #pos_fig = plt.figure()
-            #plt.plot(pos_errors)
-            #plt.show()
-            #pos_fig.savefig(current_dir+'/catkin_ws/src/edymobile/edy_controller/figures/pos_error_'+str(target_id)+'.png')
 
     def poseCallBack(self, odom_msg):
         self.x = odom_msg.pose.pose.position.x
@@ -203,8 +180,7 @@ def talker():
 
         vel_pub.publish(Edymobile.cmd_vel)
 
-        rospy.loginfo(Edymobile.robot_name+' Velocity command')
-        rospy.loginfo(Edymobile.cmd_vel)
+        rospy.loginfo(Edymobile.robot_name+' Forward Velocity command: '+ str(Edymobile.cmd_vel.linear.x) + ' angular: '+ str(Edymobile.cmd_vel.angular.z))
 
         rate.sleep()
 
