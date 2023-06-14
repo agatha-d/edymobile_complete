@@ -18,6 +18,8 @@ import os
 global tot_error
 tot_error = 0.0
 
+VERBOSE = False
+
 
 
 class DiffDriveRobot:
@@ -66,13 +68,13 @@ class DiffDriveRobot:
         # Calculate the linear error
         self.dist_to_goal = math.sqrt((self.target_x - self.x)**2 + (self.target_y - self.y)**2)
 
-        rospy.loginfo(self.robot_name+': Current x: '+str(self.x))
-        rospy.loginfo(self.robot_name+': New x target: '+ str(self.target_x))
-
-        rospy.loginfo(self.robot_name+': Current y: '+str(self.y))
-        rospy.loginfo(self.robot_name+': New y target: '+str(self.target_y))
-        
-        #rospy.loginfo(self.robot_name+': distance to goal: '+str(self.dist_to_goal))
+        if VERBOSE:
+            rospy.loginfo(self.robot_name+': Current x: '+str(self.x))
+            rospy.loginfo(self.robot_name+': New x target: '+ str(self.target_x))
+            rospy.loginfo(self.robot_name+': Current y: '+str(self.y))
+            rospy.loginfo(self.robot_name+': New y target: '+str(self.target_y))
+            
+            #rospy.loginfo(self.robot_name+': distance to goal: '+str(self.dist_to_goal))
 
         # use same condition as fleet manager
         if abs(self.target_x - self.x)>0.4 or abs(self.target_y - self.y)>0.4 or min(abs(self.target_y - self.y), abs(self.target_x - self.x))>0.2: #self.dist_to_goal > 0.4:
@@ -83,8 +85,9 @@ class DiffDriveRobot:
             # Calculate the angular error
             alpha = heading - self.theta
 
-            rospy.loginfo(self.robot_name+': heading to goal '+ str(heading))
-            rospy.loginfo(self.robot_name+': theta robot in map '+ str(self.theta))
+            if VERBOSE:
+                rospy.loginfo(self.robot_name+': heading to goal '+ str(heading))
+                rospy.loginfo(self.robot_name+': theta robot in map '+ str(self.theta))
             
             # Normalize the angular error to the range [-pi, pi]
             if alpha > math.pi:
@@ -92,8 +95,8 @@ class DiffDriveRobot:
             elif alpha < -math.pi:
                 alpha += 2*math.pi
 
-
-            rospy.loginfo(self.robot_name+': angular error: '+ str(alpha))
+            if VERBOSE:
+                rospy.loginfo(self.robot_name+': angular error: '+ str(alpha))
 
             #tot_error += alpha
 
@@ -110,12 +113,9 @@ class DiffDriveRobot:
 
                 
             change_dir = (abs(alpha)>0.05*math.pi/2 and abs(alpha)<0.8*math.pi)
-            #if not change_dir and abs(alpha)>math.pi/2: #move backwards if goal is behind
-            #    alpha = math.pi-alpha
 
-            #rospy.loginfo(self.robot_name+': cond1 ? '+str(abs(alpha)>0.05*math.pi/2))
-            #rospy.loginfo(self.robot_name+': cond2 ? '+str(abs(alpha)<0.8*math.pi/2))
-            rospy.loginfo(self.robot_name+': change dir ? '+str(change_dir))
+            if VERBOSE:
+                rospy.loginfo(self.robot_name+': change dir ? '+str(change_dir))
 
             self.cmd_vel.linear.x = (v_des + self.Kv*v_error)*(not change_dir) #+ change_dir*np.sign(v_des)*self.Kv/100 #only apply linear vel if aligned enough with target to avoid avershoot of trajectory at changes in direction
             self.cmd_vel.angular.z = -self.Ka*(alpha+4*np.sign(alpha)*change_dir)*np.sign(v_des) #+ self.ki*tot_error #angular correction, turn more if change in direction
@@ -128,7 +128,8 @@ class DiffDriveRobot:
 
             
         else:
-            rospy.loginfo(self.robot_name+': Goal reached')
+            if VERBOSE:
+                rospy.loginfo(self.robot_name+': Goal reached')
             self.goal_reached = True
             self.set_cmd_vel(0,0)
             tot_error = 0
@@ -177,10 +178,10 @@ def talker():
             Edymobile.set_cmd_vel(0, 0)
         else:
             Edymobile.compute_vel()
+            if VERBOSE:
+                rospy.loginfo(Edymobile.robot_name+' Forward Velocity command: '+ str(Edymobile.cmd_vel.linear.x) + ' angular: '+ str(Edymobile.cmd_vel.angular.z))
 
         vel_pub.publish(Edymobile.cmd_vel)
-
-        rospy.loginfo(Edymobile.robot_name+' Forward Velocity command: '+ str(Edymobile.cmd_vel.linear.x) + ' angular: '+ str(Edymobile.cmd_vel.angular.z))
 
         rate.sleep()
 
