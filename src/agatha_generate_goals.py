@@ -29,10 +29,7 @@ from move_base_msgs.msg import MoveBaseGoal
 #number_station = 4
 #state_var = 0 # 0: free, 1: has a task
 
-VERBOSE = True
-
-EPSILON = 0.0001
-
+VERBOSE = False
 DIST_THRESH = 0.3
 
 class Robot():
@@ -51,8 +48,7 @@ class Robot():
         self.goal_tempX = 0
         self.goal_tempY = 0
         self.path_gazebo = []
-        self.change_dir_val = []
-        self.change_dir_idx = []
+        self.change_dir_idx = [] # store indices in path at which there is a change in direction
         self.state_checkpoint = 0 # 0: arrived, 1: on the way
         self.state_mission = 0 # All the tasks are achieved? 0: free, 1: still is performing a mission
         self.state = 0 # 0: free, 1: has a task
@@ -76,8 +72,7 @@ class Robot():
         '''
         self.path_gazebo.clear()
         matrix_chg_base = np.array([[0, 1, -3.6],[-1, 0, 4.5], [0, 0, 1]])
-        #print(self.name, len(self.path), self.path)
-        for i in range(0, len(self.path)): #We start at 1 so we don't take into account the initial position NOT the case anymore
+        for i in range(0, len(self.path)): 
             path_temp = (self.path[i][0]/2.1, self.path[i][1]/2.1, 1)
             produit = matrix_chg_base @ path_temp
             self.path_gazebo.append((round(produit[0], 2), round(produit[1], 2)))
@@ -112,10 +107,7 @@ class Robot():
         # Set up the goal
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
-        goal.target_pose.pose.orientation.w = 1.0 # not used
-        
-        
-        #if len(self.path_gazebo)>= 1: # if there is a path to follow
+        goal.target_pose.pose.orientation.w = 1.0 # (not used)
         self.state_checkpoint = 1 # the robot is on the way to the checkpoint
         goal.target_pose.pose.position.x = self.path_gazebo[0][0]
         goal.target_pose.pose.position.y = self.path_gazebo[0][1]
@@ -123,11 +115,9 @@ class Robot():
         self.goal_tempY = self.path_gazebo[0][1]
         if VERBOSE:
             print('new checkpoint or goal for ', self.name, self.path_gazebo[0][0], self.path_gazebo[0][1])
-            
-        #else:
+
+        # If the robot has reached its gooal, make it free again
         if len(self.path_gazebo)< 1:
-            #goal.target_pose.pose.position.x = self.path_gazebo[0][0]
-            #goal.target_pose.pose.position.y = self.path_gazebo[0][1]
             if VERBOSE:
                 print('same pos', self.path_gazebo[0][0], self.path_gazebo[0][1])
             self.state = 0 # the robot is free again
@@ -135,10 +125,7 @@ class Robot():
         # Publish the goal 
         self.pub.publish(goal)
 
-        rospy.loginfo('Goal'+str(goal))
-
         return(goal)
-    
     
     
 class Station:
@@ -231,7 +218,8 @@ def task_allocation(stations, tasks_to_do, next_tasks_to_do):
 
         robots[robot_index].state = 1
         robots[robot_index].state_mission = 1 # update the mission state
-        print(robots[robot_index].name, 'is taking the task', j)
+        if VERBOSE:
+            print(robots[robot_index].name, 'is taking the task', j)
 
     goals_allocation = [(robot.goalX[-1], robot.goalY[-1]) for robot in robots]
     return goals_allocation
@@ -266,8 +254,6 @@ def check_checkpoint(current_robot, robots):
     for robot in robots:
         if robot.state == 1:
             robot.send_goal()
-        print('robot path length', len(robot.path))
-        print('robot path length', len(robot.path))
         if VERBOSE:
             print(robot.name)
             print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
@@ -310,28 +296,19 @@ def state_system(robots):
     '''
     for robot in robots:
          if robot.state == 1:
-                print('state system', robot.name)
                 return 1
     return 0
 
 
 def find_change_dir_idx(robot):
     '''
-    Create checkpoint from the path of the robot where the direction changes
+    Will store the first and last nodes in paths as well as all nodes at which there is a change in orientation
+    The goal of this function is to avoid having to send all nodes to the robot
+    - input: path in MAPF frame
     '''
-    robot.change_dir_val = [[0 for i in range(2)] for j in range(len(robot.path))]
-
-    print(robot.name)
-    print('path')
-    print(robot.path)
-
-
     for i in range(len(robot.path)-2):
-        # if two consecutive segments are perpendicular or full change of direction
+        # if two consecutive segments are perpendicular or if the robot has to move back
         if np.dot( np.array([robot.path[i+1][0]-robot.path[i][0], robot.path[i+1][1]-robot.path[i][1]]), np.array([robot.path[i+2][0]-robot.path[i+1][0], robot.path[i+2][1]-robot.path[i+1][1]]))<=0:
-            # Store the direction of the change
-            robot.change_dir_val[i+1][0] = (robot.path[i+1][0]-robot.path[i][0])
-            robot.change_dir_val[i+1][1] = (robot.path[i+1][1]-robot.path[i][1])
             # Store the indices of the changes of direction along the path
             robot.change_dir_idx.append(i+1)
 
@@ -396,78 +373,60 @@ if __name__ == '__main__':
         # init robots and stations with  initial position and name
         robots, stations = create_all_from_ini_file('configrobots.ini')
 
-        # Accessing robot and station properties:
-        for robot in robots:
-            print(f"Robot {robot.name}: ({robot.posX}, {robot.posY})")
+        if VERBOSE:
+            # Accessing robot and station properties:
+            for robot in robots:
+                print(f"Robot {robot.name}: ({robot.posX}, {robot.posY})")
 
-        for station in stations:
-            print(f"Stations {station.name}: ({station.x}, {station.y})")
+            for station in stations:
+                print(f"Stations {station.name}: ({station.x}, {station.y})")
 
         # init map
         my_map = import_mapf_instance('circuit_MAPF.txt')
         
         # generate the tasks
         tasks_to_do, next_tasks_to_do = task_generator(stations)
-        print('task generated')
-        print(tasks_to_do, next_tasks_to_do)
+        if VERBOSE:
+            print('task generated')
+            print(tasks_to_do, next_tasks_to_do)
         
         # task allocation
         goals = task_allocation(stations, tasks_to_do, next_tasks_to_do )
-        print('Goals allocated', goals)
-        #print([(robot.name, robot.goalX, robot.goalY, '................') for robot in robots])
+        if VERBOSE:
+            print('Goals allocated', goals)
         
         # Find paths
         starts = [(robot.posX, robot.posY) for robot in robots]
-        print('Current position: ', starts)
+        if VERBOSE:
+            print('Current position: ', starts)
         cbs = CBSSolver(my_map, starts, goals)
         paths = cbs.find_solution('--disjoint')
         
         # Update paths
-        all_change_dir = []
-        all_change_dir.append(0)
-
-        print('full path')
-
-        
         for robot in robots:
             robot.path = paths[robots.index(robot)]
-            #print(robot.path)
-            find_change_dir_idx(robot)
-            all_change_dir.extend(robot.change_dir_idx)
-            all_change_dir.append(len(robot.path)-1)
-        all_change_dir = np.unique(all_change_dir)
 
         # Filter the checkpoints to only keep changes in direction, initial and final positions in path
         # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
-        # TODO: The computation is correct but the algorithm also requires to keep the desired stations in the path 
-        
+        # That way, there is no delay at every node but only when one of the robots have to turn
+        all_change_dir = []
+        all_change_dir.append(0)
         for robot in robots:
-            robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] #this returns a correct result but then the next goal is never sent
-            print('after filtering')
-            print(robot.path)
-            print(robot.goalX[-1])
-            print(robot.goalY[-1])
-        ''''''
-        print('Paths updated') 
+            find_change_dir_idx(robot)
+            all_change_dir.extend(robot.change_dir_idx)
+            all_change_dir.append(len(robot.path)-1)
+        # get all indices for which AT LEAST one robot is turning
+        all_change_dir = np.unique(all_change_dir)
+        for robot in robots:
+            robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] 
+
+
+        if VERBOSE:
+            print('Paths updated') 
 
         # Change frame MAPF 2 Gazebo (for path)
-        robots[0].base_MAPF2Gazebo()
-        robots[1].base_MAPF2Gazebo()
-        robots[2].base_MAPF2Gazebo()
-        robots[3].base_MAPF2Gazebo()
-        robots[4].base_MAPF2Gazebo() # also seems to give correct filtered values
-
-        # Shift goal if there is a change n direction along the path to allow sharper turns
-        
-        '''
         for robot in robots:
-            robot.path_gazebo  += DIST_THRESH*np.asarray(robot.change_dir_val)
-            robot.path_gazebo = robot.path_gazebo.tolist()
-            print(robot.path_gazebo )
-        '''
-
-
-
+            robots[robots.index(robot)].base_MAPF2Gazebo()
 
         # Get position (Gazebo frame)
         rospy.Subscriber('/robot1/odom',Odometry,robots[0].Position)
@@ -475,107 +434,64 @@ if __name__ == '__main__':
         rospy.Subscriber('/robot3/odom',Odometry,robots[2].Position)
         rospy.Subscriber('/robot4/odom',Odometry,robots[3].Position)
         rospy.Subscriber('/robot5/odom',Odometry,robots[4].Position)
-
     
         # a checker 
-        robots[0].goal_tempX = robots[0].posX_gazebo
-        robots[0].goal_tempY = robots[0].posY_gazebo
-        robots[1].goal_tempX = robots[1].posX_gazebo
-        robots[1].goal_tempY = robots[1].posY_gazebo
-        robots[2].goal_tempX = robots[2].posX_gazebo
-        robots[2].goal_tempY = robots[2].posY_gazebo
-        robots[3].goal_tempX = robots[3].posX_gazebo
-        robots[3].goal_tempY = robots[3].posY_gazebo
-        robots[4].goal_tempX = robots[4].posX_gazebo
-        robots[4].goal_tempY = robots[4].posY_gazebo
-
-        print('temp goal 3')
-        print(robots[3].goal_tempX)
-        print(robots[3].goal_tempY)
-        print('first gazebo path 3')
-        print(robots[3].path_gazebo[0])
-
-
+        for robot in robots:
+            robots[robots.index(robot)].goal_tempX = robots[robots.index(robot)].posX_gazebo
+            robots[robots.index(robot)].goal_tempY = robots[robots.index(robot)].posY_gazebo
 
         
         while True:
-        
-            print(' ')
-            print('..................................................................')
+            if VERBOSE:
+                print(' ')
+                print('..................................................................')
 
             state_var = state_system(robots)
             state_miss = state_mission(robots)
 
-            for robot in robots:
-                print(robot.path_gazebo)
-
             if state_var == 0:
                 
-                # Update goals
-                update_goal(robots[0], goals)
-                update_goal(robots[1], goals)
-                update_goal(robots[2], goals)
-                update_goal(robots[3], goals)
-                update_goal(robots[4], goals)
+                # Update goals in MAPF frame
+                for robot in robots:
+                    update_goal(robots[robots.index(robot)], goals)
 
-                # Compute the new paths
+                # Compute the new paths in MAPF frame
                 # 1. Update MAPF position
-                robots[0].base_Gazebo2MAPF()
-                robots[1].base_Gazebo2MAPF()
-                robots[2].base_Gazebo2MAPF()
-                robots[3].base_Gazebo2MAPF()
-                robots[4].base_Gazebo2MAPF()
+                for robot in robots:
+                    robots[robots.index(robot)].base_Gazebo2MAPF()
     
                 # 2. Get the new starts
                 starts = [(robot.posX, robot.posY) for robot in robots]
                 if VERBOSE:
                     print('Current position: ', starts)
+
                 # 3. Compute the new paths
                 cbs = CBSSolver(my_map, starts, goals)
                 paths = cbs.find_solution('--disjoint')
+
                 # 4. Update the paths
-                robots[0].path = paths[0] 
-                robots[1].path = paths[1]
-                robots[2].path = paths[2]
-                robots[3].path = paths[3]
-                robots[4].path = paths[4]
-
-                all_change_dir = []
-                all_change_dir.append(0)
-
                 for robot in robots:
-                    print(robot.name)
-                    print('before filtering')
-                    print(robot.path)
-                    find_change_dir_idx(robot)
-                    all_change_dir.extend(robot.change_dir_idx)
-                    all_change_dir.append(len(robot.path)-1)
-                all_change_dir = np.unique(all_change_dir)
+                    robots[robots.index(robot)].path = paths[robots.index(robot)] 
 
                 # Filter the checkpoints to only keep changes in direction, initial and final positions in path
                 # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
-                
+                # That way, there is no delay at every node but only when one of the robots have to turn
+                all_change_dir = []
+                all_change_dir.append(0) # add initial position index
                 for robot in robots:
-                    #print(robot.name)
+                    find_change_dir_idx(robot)
+                    # store indices of direction changes for ALL robots
+                    all_change_dir.extend(robot.change_dir_idx) 
+                    # add last position index
+                    all_change_dir.append(len(robot.path)-1)    
+                # get all indices for which AT LEAST one robot is turning and keep only those for each robot
+                all_change_dir = np.unique(all_change_dir)
+                for robot in robots:
                     robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] 
-                    print('after filtering')
-                    print(robot.path)
-                    print(robot.goalX[-1])
-                    print(robot.goalY[-1])
-                ''''''
-                '''
+                
+                # 5. Change paths from MAPF frame to Gazebo coordinates
                 for robot in robots:
-                    robot.path_gazebo  += DIST_THRESH*np.asarray(robot.change_dir_val)
-                    robot.path_gazebo = robot.path_gazebo.tolist()
-                    #print(robot.path_gazebo )
-                '''
-     
-                # 5. Change paths frame to Gazebo coordinates
-                robots[0].base_MAPF2Gazebo()
-                robots[1].base_MAPF2Gazebo()
-                robots[2].base_MAPF2Gazebo()
-                robots[3].base_MAPF2Gazebo()
-                robots[4].base_MAPF2Gazebo()
+                    robots[robots.index(robot)].base_MAPF2Gazebo()
 
                 if VERBOSE:
                     print('Paths updated')
