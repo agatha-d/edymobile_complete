@@ -20,6 +20,8 @@ tot_error = 0.0
 
 VERBOSE = True
 
+DIST_THRESH = 0.3
+
 
 
 class DiffDriveRobot:
@@ -73,7 +75,7 @@ class DiffDriveRobot:
             #rospy.loginfo(self.robot_name+': distance to goal: '+str(self.dist_to_goal))
 
         # use same condition as fleet manager
-        if abs(self.target_x - self.x)>0.4 or abs(self.target_y - self.y)>0.4 or min(abs(self.target_y - self.y), abs(self.target_x - self.x))>0.2: #self.dist_to_goal > 0.4:
+        if abs(self.target_x - self.x)>DIST_THRESH or abs(self.target_y - self.y)>DIST_THRESH or min(abs(self.target_y - self.y), abs(self.target_x - self.x))>0.2: #self.dist_to_goal > 0.4:
 
             # Calculate the heading to the target
             heading = math.atan2(self.target_y - self.y, self.target_x - self.x)
@@ -126,9 +128,9 @@ class DiffDriveRobot:
             if VERBOSE:
                 rospy.loginfo(self.robot_name+': Goal reached')
             self.goal_reached = True
-            #self.set_cmd_vel(0,0)
-            self.cmd_vel.linear.x = 0 #should behave the same way
-            self.cmd_vel.angular.z = 0
+            self.set_cmd_vel(0,0)
+            #self.cmd_vel.linear.x = 0 #should behave the same way
+            #self.cmd_vel.angular.z = 0
             tot_error = 0
 
     def poseCallBack(self, odom_msg):

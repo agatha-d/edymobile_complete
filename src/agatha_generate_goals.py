@@ -33,7 +33,7 @@ VERBOSE = True
 
 EPSILON = 0.0001
 
-DIST_THRESH = 0.4
+DIST_THRESH = 0.3
 
 class Robot():
 
@@ -115,18 +115,19 @@ class Robot():
         goal.target_pose.pose.orientation.w = 1.0 # not used
         
         
-        if len(self.path_gazebo)> 1: # if there is a path to follow
-            self.state_checkpoint = 1 # the robot is on the way to the checkpoint
-            goal.target_pose.pose.position.x = self.path_gazebo[0][0]
-            goal.target_pose.pose.position.y = self.path_gazebo[0][1]
-            self.goal_tempX = self.path_gazebo[0][0]
-            self.goal_tempY = self.path_gazebo[0][1]
-            if VERBOSE:
-                print('new checkpoint or goal for ', self.name, self.path_gazebo[0][0], self.path_gazebo[0][1])
+        #if len(self.path_gazebo)>= 1: # if there is a path to follow
+        self.state_checkpoint = 1 # the robot is on the way to the checkpoint
+        goal.target_pose.pose.position.x = self.path_gazebo[0][0]
+        goal.target_pose.pose.position.y = self.path_gazebo[0][1]
+        self.goal_tempX = self.path_gazebo[0][0]
+        self.goal_tempY = self.path_gazebo[0][1]
+        if VERBOSE:
+            print('new checkpoint or goal for ', self.name, self.path_gazebo[0][0], self.path_gazebo[0][1])
             
-        else:
-            goal.target_pose.pose.position.x = self.path_gazebo[0][0]
-            goal.target_pose.pose.position.y = self.path_gazebo[0][1]
+        #else:
+        if len(self.path_gazebo)< 1:
+            #goal.target_pose.pose.position.x = self.path_gazebo[0][0]
+            #goal.target_pose.pose.position.y = self.path_gazebo[0][1]
             if VERBOSE:
                 print('same pos', self.path_gazebo[0][0], self.path_gazebo[0][1])
             self.state = 0 # the robot is free again
@@ -265,6 +266,8 @@ def check_checkpoint(current_robot, robots):
     for robot in robots:
         if robot.state == 1:
             robot.send_goal()
+        print('robot path length', len(robot.path))
+        print('robot path length', len(robot.path))
         if VERBOSE:
             print(robot.name)
             print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
@@ -273,7 +276,9 @@ def check_checkpoint(current_robot, robots):
             if VERBOSE:
                 print('next checkpoint')
             robot.state_checkpoint = 0
-        
+            if len(robot.path_gazebo)<=1:
+                robot.state = 0 
+
 
 def send_checkpoint(robots):
     '''
@@ -287,8 +292,6 @@ def send_checkpoint(robots):
             return True 
         
     for robot in robots:
-        #if robot.state == 1: # we send the goal only to the robots performing a task 
-        print('remove goal from list')
         if len(robot.path_gazebo)>1:
             robot.path_gazebo.pop(0)
     return True 
@@ -307,6 +310,7 @@ def state_system(robots):
     '''
     for robot in robots:
          if robot.state == 1:
+                print('state system', robot.name)
                 return 1
     return 0
 
@@ -323,8 +327,8 @@ def find_change_dir_idx(robot):
 
 
     for i in range(len(robot.path)-2):
-        # if two consecutive segments are perpendicular
-        if  (robot.path[i+1][0]-robot.path[i][0])*(robot.path[i+2][0]-robot.path[i+1][0])+(robot.path[i+1][1]-robot.path[i][1])*(robot.path[i+2][1]-robot.path[i+1][1]) == 0 or :
+        # if two consecutive segments are perpendicular or full change of direction
+        if np.dot( np.array([robot.path[i+1][0]-robot.path[i][0], robot.path[i+1][1]-robot.path[i][1]]), np.array([robot.path[i+2][0]-robot.path[i+1][0], robot.path[i+2][1]-robot.path[i+1][1]]))<=0:
             # Store the direction of the change
             robot.change_dir_val[i+1][0] = (robot.path[i+1][0]-robot.path[i][0])
             robot.change_dir_val[i+1][1] = (robot.path[i+1][1]-robot.path[i][1])
@@ -422,9 +426,12 @@ if __name__ == '__main__':
         all_change_dir = []
         all_change_dir.append(0)
 
+        print('full path')
+
         
         for robot in robots:
             robot.path = paths[robots.index(robot)]
+            #print(robot.path)
             find_change_dir_idx(robot)
             all_change_dir.extend(robot.change_dir_idx)
             all_change_dir.append(len(robot.path)-1)
@@ -436,6 +443,10 @@ if __name__ == '__main__':
         
         for robot in robots:
             robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] #this returns a correct result but then the next goal is never sent
+            print('after filtering')
+            print(robot.path)
+            print(robot.goalX[-1])
+            print(robot.goalY[-1])
         ''''''
         print('Paths updated') 
 
@@ -533,6 +544,9 @@ if __name__ == '__main__':
                 all_change_dir.append(0)
 
                 for robot in robots:
+                    print(robot.name)
+                    print('before filtering')
+                    print(robot.path)
                     find_change_dir_idx(robot)
                     all_change_dir.extend(robot.change_dir_idx)
                     all_change_dir.append(len(robot.path)-1)
@@ -542,7 +556,12 @@ if __name__ == '__main__':
                 # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
                 
                 for robot in robots:
+                    #print(robot.name)
                     robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] 
+                    print('after filtering')
+                    print(robot.path)
+                    print(robot.goalX[-1])
+                    print(robot.goalY[-1])
                 ''''''
                 '''
                 for robot in robots:
