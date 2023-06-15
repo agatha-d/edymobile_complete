@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
-# Software License Agreement (BSD License)
+'''
+Simple controller node for a differential drive robot to be used on a circuit with only straight paths
+----------------------------------------------------------------------------------------------------------
+
+Description: 
+The controller encourages a constant linear velocity since the paths are computed by a fleet manager thanks to 
+the Hungarian algorithm which requires a constant velocity for all agents. Since the algorithm ignores the time 
+required for turning, the paths will be recomputed every time a robot has to change direction, and the controller
+encourages the robots to turn in place.
+
+Subscribed topics:
+- edymobile/move_base_goal (edymobile can be replaced yith the desired robot name): Position of the next target
+- edymobile/odom: Current robot odometry information
+
+Published topics:
+- edymobile/cmd_vel: Velocity command for the differential drive robot
+
+Author: Agatha Duranceau
+Contact: agatha.duranceau@yahoo.fr
+
+'''
 
 
 import rospy
@@ -114,7 +134,7 @@ class DiffDriveRobot:
             if VERBOSE:
                 rospy.loginfo(self.robot_name+': change dir ? '+str(change_dir))
 
-            self.cmd_vel.linear.x = (v_des + self.Kv*v_error)*(not change_dir) # #only apply linear vel if aligned enough with target to avoid avershoot of trajectory at changes in direction
+            self.cmd_vel.linear.x = (v_des + self.Kv*v_error)*(not change_dir) #only apply linear vel if aligned enough with target to avoid avershoot of trajectory at changes in direction
             self.cmd_vel.angular.z = -self.Ka*(alpha+4*np.sign(alpha)*change_dir)*np.sign(v_des) #- self.ki*self.tot_error #angular correction, turn more if change in direction
             
 

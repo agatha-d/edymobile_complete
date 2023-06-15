@@ -1,14 +1,31 @@
-# Difference dans la generation des taches, on ne peut pas avoir deux fois le meme goal
-# On envoie les goals aux robots
-# Structure finale
-# On effectue les missions de A à Z 
-# on envoie des checkpoints aux robots - changement de direction
-# on calcul une seule fois le chemin
+#!/usr/bin/env python3
+'''
+Simple controller node for a differential drive robot to be used on a circuit with only straight paths
+----------------------------------------------------------------------------------------------------------
 
-# python3 run_experiments.py --disjoint --instance instances/circuit.txt --solver Prioritized
+Description: 
+This fleet manager generates the goals for the robots, compute non-collinding paths and send them to the robots
+The algorithm used for task allocation is Hungarian algorithm which requires a constant velocity for all agents. 
+Since the algorithm ignores the time required for turning, the paths will be recomputed every time a robot has 
+to change direction. Tho goals sent to the robot controllers are the initial and final checkpoints of the path,
+as well as all the intermediate changes in direction along the way. 
+
+The current implementation supports the fontrol of a fleet of 5 robots that must transport samples from and 
+to 4 stations, namely { 'discovery' : (5, 2), 'omni' : (5, 10), 'synt' : (9, 10), 'sfc' : (0, 10) } given by their 
+position in a hardcoded map.
+
+Subscribed topics:
+- robot/odom: (robot can be replaced yith the desired robot name) Current robot odometry information to compute desired paths
+
+Published topics:
+- robot/move_base_goal: Position of the next target
 
 
-# Librairie
+Author: Yasmine El Goumi
+modified by: Agatha Duranceau, contact: agatha.duranceau@yahoo.fr
+'''
+
+
 from pathlib import Path
 from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 import random
@@ -23,11 +40,7 @@ import configparser
 import rospy
 from move_base_msgs.msg import MoveBaseGoal
 
-#stations = { 'discovery' : (5, 2), 'omni' : (5, 10), 'synt' : (9, 10), 'sfc' : (0, 10) }
-#robots = { '0' : (17, 1), '1' : (19, 1), '2' : (3, 5), '3' : (17, 10),'4' : (19, 10)}
-#number_robot = 5
-#number_station = 4
-#state_var = 0 # 0: free, 1: has a task
+
 
 VERBOSE = False
 DIST_THRESH = 0.3
@@ -37,21 +50,24 @@ class Robot():
     def __init__(self, nameRobot, initX, initY, number):
         self.name = nameRobot
         self.id = number
+        # robot initial position
         self.posX = initX
         self.posY = initY
+        # the goals are stored in descending order of priority: the first goal to reach (the collecting station) is the last in the list
         self.goalX = [initX]
         self.goalY = [initY]
-        self.path = []
+        self.path = [] # path in MAPF frame
         self.produit = np.array([[0, 1, -3.6],[-1, 0, 4.5], [0, 0, 1]]) @ (self.posX/2.1, self.posY/2.1, 1)
         self.posX_gazebo = round(self.produit[0], 2 )
         self.posY_gazebo = round(self.produit[1], 2 )
         self.goal_tempX = 0
         self.goal_tempY = 0
-        self.path_gazebo = []
-        self.change_dir_idx = [] # store indices in path at which there is a change in direction
-        self.state_checkpoint = 0 # 0: arrived, 1: on the way
-        self.state_mission = 0 # All the tasks are achieved? 0: free, 1: still is performing a mission
-        self.state = 0 # 0: free, 1: has a task
+        self.path_gazebo = []     # path in Gazebo reference frame
+        self.change_dir_idx = []  # store indices in path at which there is a change in direction
+        # sytem state variables
+        self.state_checkpoint = 0 # Arrived to the checkpoint? 0: arrived, 1: on the way
+        self.state_mission = 0    # All the tasks are achieved? 0: free, 1: still is performing a mission (one mission = a set of tasks)
+        self.state = 0            # Is the current task achieved? 0: finished the task, 1: is performing the task
         self.checkpoint = []
 
         # ROS Publisher for sending goal to controller
@@ -59,7 +75,9 @@ class Robot():
 
 
     def Position(self, odom_data):
-        curr_time = odom_data.header.stamp
+        '''
+        Get data from odometry topic
+        '''
         self.posX_gazebo = round(odom_data.pose.pose.position.x, 2)
         self.posY_gazebo = round(odom_data.pose.pose.position.y, 2)
 
@@ -67,7 +85,7 @@ class Robot():
     def base_MAPF2Gazebo(self):
         '''
         Change of base MAPF 2 GAZEBO
-        - input: paths in the MAPF frame
+        - input : paths in the MAPF frame
         - output: paths in the GAZEBO frame
         '''
         self.path_gazebo.clear()
@@ -83,7 +101,7 @@ class Robot():
     def base_Gazebo2MAPF(self):
         '''
         Change of base GAZEBO 2 MAPF
-        - input: paths in the MAPF frame
+        - input : paths in the MAPF frame
         - output: paths in the GAZEBO frame
         '''
         matrix_chg_base = np.array([[0, -1, 4.5],[1, 0, 3.6], [0, 0, 1]])
@@ -138,7 +156,7 @@ class Station:
 def import_mapf_instance(filename):
     '''
     MAP GENERATION (FOR A*)
-    - input: text file representing the map
+    - input : text file representing the map
     - output: table containing free and occupied cells
     '''
     f = Path(filename)
@@ -150,7 +168,7 @@ def import_mapf_instance(filename):
     rows, columns = [int(x) for x in line.split(' ')]
     rows = int(rows)
     columns = int(columns)
-    # #rows lines with the map
+    # rows lines with the map
     my_map = []
     for r in range(rows):
         line = f.readline()
@@ -168,26 +186,38 @@ def import_mapf_instance(filename):
 def task_generator(stations):
     '''
     TASK GENERATION: generate random tasks for the robots
-    TODO: get tasks from a task generation manager at higher level
-    - input: stations: discovery,5,2;omni,5,10;synt,9,10;sfc,0,10
+
+    - input:  stations: 0: discovery (5,2) ; 1: omni (5,10) ; 2: synt (9,10) ; 3: sfc (0,10)
+    - output: tasks_to_do is a list containing: [[Collection station(s)][Delivery station(s)]]
+
+    example: [[0,3],[1,2]] consists in sending one robot to collect samples in station 0 and deliver them to station 1
+    and another robot to collect samples  in station 3 and deliver them to station 2
     '''
+    #TODO: get tasks from a task generation manager at higher level
+
+    # possible tasks:
     #tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
-    #tasks_to_do = random.choice(tasks)
-    tasks_to_do = [[0],[3]] #[[2],[1]]#[[2,0],[1, 3]]
+    #tasks_to_do = random.choice(tasks) # select a random set of tasks
+
+    tasks_to_do = [[0],[3]] #[[2],[1]]#[[2,0],[1, 3]] # values for testing
    
     return tasks_to_do[0], tasks_to_do[1]
 
 
 def task_allocation(stations, tasks_to_do, next_tasks_to_do):
     '''
-    TASK ALLOCATION
-    - input: robots
-    - output: goals allocated to each robot
+    Allocate the tasks to the robots by minimizing the total distance travelled by the robots
+    - input : list of station, list of tasks: collecting stations in task_to_do, delivery station in next_tasks_to_do
+    - output: list of goals allocated to each robot, updates state_goal and state_mission if robots were assigned tasks
     '''
 
     starts_robots = [(robot.posX, robot.posY) for robot in robots]
     goals_allocation = []
     cost_matrix = np.zeros((len(tasks_to_do), len(robots)))
+
+    # 1. OPTIMIZATION - Hungarian algorithm
+
+    # update goals_allocation with the collection stations to reach
     for i in range(0, len(tasks_to_do)):
         goals_allocation.append((stations[tasks_to_do[i]].x, stations[tasks_to_do[i]].y))
     
@@ -208,7 +238,7 @@ def task_allocation(stations, tasks_to_do, next_tasks_to_do):
     if VERBOSE:
         print(indexes)
     
-    # Update goals
+    # 2. Update goals for the robots performing a task
     for j in range(0, len(indexes)):
         robot_index = indexes[j][1]
         robots[robot_index].goalX.append(stations[next_tasks_to_do[indexes[j][0]]].x)
@@ -221,6 +251,7 @@ def task_allocation(stations, tasks_to_do, next_tasks_to_do):
         if VERBOSE:
             print(robots[robot_index].name, 'is taking the task', j)
 
+    # 3. Update goals_allocation list containing the goals for each robot
     goals_allocation = [(robot.goalX[-1], robot.goalY[-1]) for robot in robots]
     return goals_allocation
 
@@ -283,8 +314,10 @@ def send_checkpoint(robots):
     return True 
 
 def state_mission(robots):
-    # Check if all robots achieved their mission (collecting, delivering and returning to the base) 
-    # if it's the case, we return 0, else we return 1
+    '''
+    Check if all robots achieved their mission (collecting, delivering and returning to the base) 
+    if it's the case, we return 0, else we return 1
+    '''
     for robot in robots:
          if robot.state_mission == 1: 
                 return 1
@@ -363,6 +396,12 @@ def create_all_from_ini_file(file_path):
     stations = create_stations_from_ini_file(file_path)
     return robots, stations
 
+
+
+
+
+
+
 if __name__ == '__main__':
     try:
         goals = []
@@ -408,7 +447,7 @@ if __name__ == '__main__':
 
         # Filter the checkpoints to only keep changes in direction, initial and final positions in path
         # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
-        # That way, there is no delay at every node but only when one of the robots have to turn
+        # while still maintaining a consant velocity since there is no delay at every node but only when one of the robots have to turn
         all_change_dir = []
         all_change_dir.append(0)
         for robot in robots:
@@ -475,7 +514,7 @@ if __name__ == '__main__':
 
                 # Filter the checkpoints to only keep changes in direction, initial and final positions in path
                 # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
-                # That way, there is no delay at every node but only when one of the robots have to turn
+                # while still maintaining a consant velocity since there is no delay at every node but only when one of the robots have to turn
                 all_change_dir = []
                 all_change_dir.append(0) # add initial position index
                 for robot in robots:
