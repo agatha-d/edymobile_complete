@@ -18,7 +18,7 @@ import os
 global tot_error
 tot_error = 0.0
 
-VERBOSE = False
+VERBOSE = True
 
 
 
@@ -37,10 +37,6 @@ class DiffDriveRobot:
         self.v_desired = v_cst
         # Position goal
         self.goal = MoveBaseGoal()
-        #goal.target_pose.header.frame_id = "map"
-        #goal.target_pose.pose.orientation.w = 1.0
-        #goal.target_pose.pose.position.x = self.path_gazebo[0][0]
-        #goal.target_pose.pose.position.y = self.path_gazebo[0][1]
         # TODO: modify to only use the movebase goal format
         self.target_x = None
         self.target_y = None
@@ -49,7 +45,7 @@ class DiffDriveRobot:
         # Control gains
         self.Ka = 0.1
         self.Kv = 0.2
-        self.ki = 0.0
+        self.ki = 0.0001
         self.kd = 0.001
 
     def set_target(self, target_x, target_y):
@@ -98,7 +94,7 @@ class DiffDriveRobot:
             if VERBOSE:
                 rospy.loginfo(self.robot_name+': angular error: '+ str(alpha))
 
-            #tot_error += alpha
+            tot_error += alpha
 
             # Move backwards if the goal is behind the robot
             if abs(alpha)>0.8*math.pi:
@@ -112,7 +108,7 @@ class DiffDriveRobot:
             v_error = v_des - self.cmd_vel.linear.x 
 
                 
-            change_dir = (abs(alpha)>0.05*math.pi/2 and abs(alpha)<0.8*math.pi)
+            change_dir = (abs(alpha)>0.05*math.pi and abs(alpha)<0.8*math.pi)
 
             if VERBOSE:
                 rospy.loginfo(self.robot_name+': change dir ? '+str(change_dir))
@@ -122,16 +118,17 @@ class DiffDriveRobot:
             
 
             # Adjust the angular velocity to maintain approximately constant linear velocity
-            if self.dist_to_goal < 0.5 and not change_dir:
-            #    rospy.loginfo('Angular vel adjustment')
-                self.cmd_vel.angular.z = self.cmd_vel.angular.z*(self.dist_to_goal/0.5)
+            #if self.dist_to_goal < 0.5 and not change_dir:
+            #    self.cmd_vel.angular.z = self.cmd_vel.angular.z*(self.dist_to_goal/0.5)
 
             
         else:
             if VERBOSE:
                 rospy.loginfo(self.robot_name+': Goal reached')
             self.goal_reached = True
-            self.set_cmd_vel(0,0)
+            #self.set_cmd_vel(0,0)
+            self.cmd_vel.linear.x = 0 #should behave the same way
+            self.cmd_vel.angular.z = 0
             tot_error = 0
 
     def poseCallBack(self, odom_msg):
@@ -166,6 +163,7 @@ def talker():
     # Subscribe to goal information from fleet manager: takes next checkpoint in path as goal and update robot goal
     rospy.Subscriber(Edymobile.robot_name+'move_base/goal', MoveBaseGoal, Edymobile.goalCallBack)
 
+
     # ################# ROS Publishers ###################
     # Publish Diff Drive Twist message velocity command
     vel_pub = rospy.Publisher(Edymobile.robot_name+'cmd_vel', Twist, queue_size=10)
@@ -180,6 +178,7 @@ def talker():
             Edymobile.compute_vel()
             if VERBOSE:
                 rospy.loginfo(Edymobile.robot_name+' Forward Velocity command: '+ str(Edymobile.cmd_vel.linear.x) + ' angular: '+ str(Edymobile.cmd_vel.angular.z))
+            rospy.loginfo(Edymobile.robot_name+' Forward Velocity command: '+ str(Edymobile.cmd_vel.linear.x) + ' angular: '+ str(Edymobile.cmd_vel.angular.z))
 
         vel_pub.publish(Edymobile.cmd_vel)
 

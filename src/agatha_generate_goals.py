@@ -29,9 +29,11 @@ from move_base_msgs.msg import MoveBaseGoal
 #number_station = 4
 #state_var = 0 # 0: free, 1: has a task
 
-VERBOSE = False
+VERBOSE = True
 
 EPSILON = 0.0001
+
+DIST_THRESH = 0.4
 
 class Robot():
 
@@ -49,6 +51,8 @@ class Robot():
         self.goal_tempX = 0
         self.goal_tempY = 0
         self.path_gazebo = []
+        self.change_dir_val = []
+        self.change_dir_idx = []
         self.state_checkpoint = 0 # 0: arrived, 1: on the way
         self.state_mission = 0 # All the tasks are achieved? 0: free, 1: still is performing a mission
         self.state = 0 # 0: free, 1: has a task
@@ -111,9 +115,8 @@ class Robot():
         goal.target_pose.pose.orientation.w = 1.0 # not used
         
         
-        if len(self.path_gazebo)> 1:
-            self.state_checkpoint = 1
-            self.path_gazebo.pop(0)
+        if len(self.path_gazebo)> 1: # if there is a path to follow
+            self.state_checkpoint = 1 # the robot is on the way to the checkpoint
             goal.target_pose.pose.position.x = self.path_gazebo[0][0]
             goal.target_pose.pose.position.y = self.path_gazebo[0][1]
             self.goal_tempX = self.path_gazebo[0][0]
@@ -128,10 +131,8 @@ class Robot():
                 print('same pos', self.path_gazebo[0][0], self.path_gazebo[0][1])
             self.state = 0 # the robot is free again
 
-        # Publish the goal and 
+        # Publish the goal 
         self.pub.publish(goal)
-
-        #TODO: wait for completion of the turn in change dir ??
 
         rospy.loginfo('Goal'+str(goal))
 
@@ -184,7 +185,7 @@ def task_generator(stations):
     '''
     #tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
     #tasks_to_do = random.choice(tasks)
-    tasks_to_do = [[2,0],[1, 3]]
+    tasks_to_do = [[0],[3]] #[[2],[1]]#[[2,0],[1, 3]]
    
     return tasks_to_do[0], tasks_to_do[1]
 
@@ -236,38 +237,10 @@ def task_allocation(stations, tasks_to_do, next_tasks_to_do):
 
 
 
-
-# TODO: modify and use correct change dir condition
-def get_smallest_path_len_without_change_dir(robots):
-    '''
-    Among all robots, the the length of the shorterst path without a change in direction
-    '''
-
-    idx = max([len(robot.path) for robot in robots])
-    print(idx)
-
-    for robot in robots:
-        for i in range(0, len(robot.path)-1):
-            # If there is a change of direction in the path
-            if abs(robot.path[i][0]- robot.path[i+1][0]) <  EPSILON or abs(robot.path[i][1] -robot.path[i+1][1]) < EPSILON:
-                # keep the index of the first change in direction among all paths
-                idx = min(i,idx)
-                print('Smaller Change of dir at index:')
-                print(idx)
-                break # check path of next robot
-
-    print('final idx')
-    print(idx)
-                 
-    return idx
-
-
-
 def update_goal(robot, goals):
     '''
     Check if goal is reached, if it's the case, remove from goal list
     '''
-
     if VERBOSE:
         print(robot.name, 'reached its goal')
 
@@ -290,11 +263,13 @@ def check_checkpoint(current_robot, robots):
     '''
     
     for robot in robots:
+        if robot.state == 1:
+            robot.send_goal()
         if VERBOSE:
             print(robot.name)
             print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
             print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))
-        if (abs(robot.posX_gazebo-robot.goal_tempX)<0.4 and abs(robot.posY_gazebo-robot.goal_tempY)<0.4) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.2:
+        if (abs(robot.posX_gazebo-robot.goal_tempX)<DIST_THRESH and abs(robot.posY_gazebo-robot.goal_tempY)<DIST_THRESH) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.2:
             if VERBOSE:
                 print('next checkpoint')
             robot.state_checkpoint = 0
@@ -312,14 +287,17 @@ def send_checkpoint(robots):
             return True 
         
     for robot in robots:
-        robot.send_goal()
+        #if robot.state == 1: # we send the goal only to the robots performing a task 
+        print('remove goal from list')
+        if len(robot.path_gazebo)>1:
+            robot.path_gazebo.pop(0)
     return True 
 
 def state_mission(robots):
     # Check if all robots achieved their mission (collecting, delivering and returning to the base) 
     # if it's the case, we return 0, else we return 1
     for robot in robots:
-         if robot.state_mission == 1:
+         if robot.state_mission == 1: 
                 return 1
     return 0
 
@@ -333,19 +311,25 @@ def state_system(robots):
     return 0
 
 
-def checkpoint_generator(robot):
+def find_change_dir_idx(robot):
     '''
     Create checkpoint from the path of the robot where the direction changes
     '''
-    change_dir = []
-    change_dir.append(robot.path[0])
+    robot.change_dir_val = [[0 for i in range(2)] for j in range(len(robot.path))]
+
+    print(robot.name)
+    print('path')
+    print(robot.path)
+
+
     for i in range(len(robot.path)-2):
-        if  (robot.path[i+1][0]-robot.path[i][0])*(robot.path[i+2][0]-robot.path[i+1][0])+(robot.path[i+1][1]-robot.path[i][1])*(robot.path[i+2][1]-robot.path[i+1][1]) == 0:
-            change_dir.append(robot.path[i+1])
-    change_dir.append(robot.path[-1])
-    #robot.path.clear()
-    #robot.path = checkpoint.copy()
-    return change_dir
+        # if two consecutive segments are perpendicular
+        if  (robot.path[i+1][0]-robot.path[i][0])*(robot.path[i+2][0]-robot.path[i+1][0])+(robot.path[i+1][1]-robot.path[i][1])*(robot.path[i+2][1]-robot.path[i+1][1]) == 0 or :
+            # Store the direction of the change
+            robot.change_dir_val[i+1][0] = (robot.path[i+1][0]-robot.path[i][0])
+            robot.change_dir_val[i+1][1] = (robot.path[i+1][1]-robot.path[i][1])
+            # Store the indices of the changes of direction along the path
+            robot.change_dir_idx.append(i+1)
 
 
 def check_boundaries(X, Y, my_map):
@@ -403,7 +387,6 @@ if __name__ == '__main__':
         goals = []
         starts = []
 
-        #rospy.init_node('odometry', anonymous=True) #make node 
         rospy.init_node('agatha_generate_goals', anonymous=True) #make node 
 
         # init robots and stations with  initial position and name
@@ -434,14 +417,26 @@ if __name__ == '__main__':
         print('Current position: ', starts)
         cbs = CBSSolver(my_map, starts, goals)
         paths = cbs.find_solution('--disjoint')
-
         
         # Update paths
+        all_change_dir = []
+        all_change_dir.append(0)
 
+        
         for robot in robots:
             robot.path = paths[robots.index(robot)]
-            #print(robot.name, robot.path)
-    
+            find_change_dir_idx(robot)
+            all_change_dir.extend(robot.change_dir_idx)
+            all_change_dir.append(len(robot.path)-1)
+        all_change_dir = np.unique(all_change_dir)
+
+        # Filter the checkpoints to only keep changes in direction, initial and final positions in path
+        # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
+        # TODO: The computation is correct but the algorithm also requires to keep the desired stations in the path 
+        
+        for robot in robots:
+            robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] #this returns a correct result but then the next goal is never sent
+        ''''''
         print('Paths updated') 
 
         # Change frame MAPF 2 Gazebo (for path)
@@ -449,7 +444,18 @@ if __name__ == '__main__':
         robots[1].base_MAPF2Gazebo()
         robots[2].base_MAPF2Gazebo()
         robots[3].base_MAPF2Gazebo()
-        robots[4].base_MAPF2Gazebo()
+        robots[4].base_MAPF2Gazebo() # also seems to give correct filtered values
+
+        # Shift goal if there is a change n direction along the path to allow sharper turns
+        
+        '''
+        for robot in robots:
+            robot.path_gazebo  += DIST_THRESH*np.asarray(robot.change_dir_val)
+            robot.path_gazebo = robot.path_gazebo.tolist()
+            print(robot.path_gazebo )
+        '''
+
+
 
 
         # Get position (Gazebo frame)
@@ -472,8 +478,15 @@ if __name__ == '__main__':
         robots[4].goal_tempX = robots[4].posX_gazebo
         robots[4].goal_tempY = robots[4].posY_gazebo
 
+        print('temp goal 3')
+        print(robots[3].goal_tempX)
+        print(robots[3].goal_tempY)
+        print('first gazebo path 3')
+        print(robots[3].path_gazebo[0])
 
 
+
+        
         while True:
         
             print(' ')
@@ -481,6 +494,9 @@ if __name__ == '__main__':
 
             state_var = state_system(robots)
             state_miss = state_mission(robots)
+
+            for robot in robots:
+                print(robot.path_gazebo)
 
             if state_var == 0:
                 
@@ -512,6 +528,28 @@ if __name__ == '__main__':
                 robots[2].path = paths[2]
                 robots[3].path = paths[3]
                 robots[4].path = paths[4]
+
+                all_change_dir = []
+                all_change_dir.append(0)
+
+                for robot in robots:
+                    find_change_dir_idx(robot)
+                    all_change_dir.extend(robot.change_dir_idx)
+                    all_change_dir.append(len(robot.path)-1)
+                all_change_dir = np.unique(all_change_dir)
+
+                # Filter the checkpoints to only keep changes in direction, initial and final positions in path
+                # This will allow to recompute the paths only if one of the robot changes direction in order to avoid collisions
+                
+                for robot in robots:
+                    robot.path = [robot.path[i] for i in list(filter(lambda item: item < len(robot.path), all_change_dir))] 
+                ''''''
+                '''
+                for robot in robots:
+                    robot.path_gazebo  += DIST_THRESH*np.asarray(robot.change_dir_val)
+                    robot.path_gazebo = robot.path_gazebo.tolist()
+                    #print(robot.path_gazebo )
+                '''
      
                 # 5. Change paths frame to Gazebo coordinates
                 robots[0].base_MAPF2Gazebo()
@@ -519,25 +557,20 @@ if __name__ == '__main__':
                 robots[2].base_MAPF2Gazebo()
                 robots[3].base_MAPF2Gazebo()
                 robots[4].base_MAPF2Gazebo()
+
                 if VERBOSE:
                     print('Paths updated')
 
             if state_miss == 0:
                 if VERBOSE:
                     print('Mission completed')
-                for robot in robots:
-                    if VERBOSE:
-                        print(robot.name, robot.timeGoal)
                 break
 
             # check if checkpoint is reached
-            
             check_checkpoint(robots[0], robots)
 
+            # send target to controller
             send_checkpoint(robots)
-
-            #get_smallest_path_len_without_change_dir(robots)
-      
       
             # Wait 1 sec
             rospy.sleep(1)
