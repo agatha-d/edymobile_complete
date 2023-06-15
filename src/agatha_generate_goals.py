@@ -258,7 +258,7 @@ def check_checkpoint(current_robot, robots):
             print(robot.name)
             print('distance to goal X', abs(robot.posX_gazebo-robot.goal_tempX))
             print('distance to goal Y', abs(robot.posY_gazebo-robot.goal_tempY))
-        if (abs(robot.posX_gazebo-robot.goal_tempX)<DIST_THRESH and abs(robot.posY_gazebo-robot.goal_tempY)<DIST_THRESH) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.2:
+        if (abs(robot.posX_gazebo-robot.goal_tempX)<DIST_THRESH and abs(robot.posY_gazebo-robot.goal_tempY)<DIST_THRESH) and min(abs(robot.posX_gazebo-robot.goal_tempX), abs(robot.posY_gazebo-robot.goal_tempY))<0.1:
             if VERBOSE:
                 print('next checkpoint')
             robot.state_checkpoint = 0
