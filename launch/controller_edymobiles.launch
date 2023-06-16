@@ -45,7 +45,7 @@
 
 
 <!-- node pkg="rviz" type="rviz" name="rviz" /-->
-<node name="rviz" pkg="rviz" type="rviz" args="-d $(find edymobile_complete)/rviz/navigation.rviz" />
+<!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find edymobile_complete)/rviz/navigation.rviz" /-->
 
 
 </launch>

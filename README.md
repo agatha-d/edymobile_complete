@@ -52,6 +52,7 @@
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
+    <li><a href="#ref">Useful resources</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
@@ -79,17 +80,23 @@ This project is a complete package to control a fleet of mobile differential dri
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 To start, learn about the urdf_tutorial
 
 See the tutorials over at http://wiki.ros.org/urdf_tutorial
 
+The robot description that includes the DiffDrive plugin to control the robot with velocity commands can be found at edymobile_complete/urdf/edymobile_theo.xacro. The configuration parameters for the joints of the model are to be fond in edymobile_complete/config/joints.yaml.
+
+The Gazebo world used in the simulation is edymobile_complete/world/circuit_MAPF_VF.world.
+
+The controller node is in edymobile_complete/src/edy_controller_node.py.
+
+The fleet manager is in edymobile_complete/src/agatha_generate_goals.py.
+
+
+
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
 * python
   ```sh
   sudo apt install python3-pip
@@ -116,7 +123,7 @@ To run the project:
   roslaunch edymobile_complete edymobile_main.launch
   ```
 
-You should see Gazebo open with the world representing the circuit in the laboratory anf the five robots at their initial positions. So far, the robots do not move as the controllers have not been launched yet.
+You should see Gazebo open with the world representing the circuit in the laboratory and the five robots at their initial positions. So far, the robots do not move as the controllers have not been launched yet. This launch file opens Gazebo with the laboratory world and calls the spawn_edymobiles.launch file to spawn the different robots with the correct robot description and a namespace is associated with each robot (/robot1, /robot2, /robot3, /robot4 ad /robot5).
 
 [![EdyMobile][robots-in-map]](https://github.com/agatha-d/edymobile_complete)
 
@@ -126,11 +133,14 @@ You should see Gazebo open with the world representing the circuit in the labora
   roslaunch edymobile_complete controller_edymobiles.launch
   ```
 
+This launch file launches an instance of the controller node for each of the five robots. The robots still do not move as the controller nodes are waiting for instructions from the fleet manager.
+
 * Run the fleet manager script to send targets to the robots:
   ```sh
   cd edymobile_complete/src
   python3 agatha_generate_goals.py
   ```
+The fleet manager will allocate tasks to different robots and generate a path for each robot to achieve those tasks. The next checkpoint along the path is sent to the controllers of each robots to which a task has been allocated, and these should start moving.
 
 
 
@@ -141,10 +151,14 @@ You should see Gazebo open with the world representing the circuit in the labora
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-- [ ] Nested Feature
+This project is the implementation of a basic framework for the control of a fleet of mobile robots. Future developments may include:
+
+- [ ] Improving the control strategy to enable sharper turns at intersections accross the map
+- [ ] Implement a waiting condition to avoid collision with a turning robot ahead
+- [ ] Explore other task allocation strategies that could adapt robot velocities to deliver samples as fast as possible
+- [ ] Establish metrics to evaluate the performance of the collective system, e.g. time needed to achieve all goals, number of active robots, etcEstablish metrics to evaluate the performance of the collective system, e.g. time needed to achieve all goals, number of active robots, etc.
+- [ ] Adapt the code to work with an arbitrary number of robots
+- [ ] Deploy on the real robots
 
 See the [open issues](https://github.com/agatha-d/edymobile_complete/issues) for a full list of proposed features (and known issues).
 
@@ -176,6 +190,18 @@ Don't forget to give the project a star! Thanks again!
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- USEFUL RESOURCES -->
+## Useful Resources
+
+
+* ROS Tutorials: http://wiki.ros.org/ROS/Tutorials
+* Open Navigation LLC - Setting Up The URDF: https://navigation.ros.org/setup_guides/urdf/setup_urdf.html
+* Gazebo ROS control: https://classic.gazebosim.org/tutorials?tut=ros_control&cat=connect_ros
+* Robotic simulation scenarios with Gazebo and ROS: https://www.generationrobots.com/blog/en/robotic-simulation-scenarios-with-gazebo-and-ros/#create%20your%20own%20robot%20model
+* Automatic Addison, Setting up the ROS navigation stack for a simulated robot: howpublished = "\url{https://automaticaddison.com/setting-up-the-ros-navigation-stack-for-a-simulated-robot/}"}
+
+
 
 
 
