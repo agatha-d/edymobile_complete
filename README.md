@@ -62,10 +62,9 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![EdyMobile][product-screenshot]](https://github.com/agatha-d/edymobile_complete)
+[![EdyMobile][robots-in-world]](https://github.com/agatha-d/edymobile_complete)
 
-This project is a complete package to control a fleet of mobile robots, called Edymobiles, and 
-allow them to transport samples from station to station in a chemistry laboratory for automating research experiments.
+This project is a complete package to control a fleet of mobile differential drive robots, called Edymobiles, and allow them to transport samples from station to station in a chemistry laboratory for automating research experiments. The implementation is made in simulation using ROS and Gazebo. It has been developped as a part of a semester project for the SwissCAT+ laboratory and CREATE Lab at EPFL with the aim to automate chemistry research experiments.
 
 
 
@@ -110,9 +109,30 @@ This is an example of how to list things you need to use the software and how to
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+To run the project:
 
-_For more examples, please refer to the [Documentation](https://github.com/agatha-d/edymobile_complete)_
+* Launch the simulation in Gazebo that spawns the five Edymobile models in the world:
+  ```sh
+  roslaunch edymobile_complete edymobile_main.launch
+  ```
+
+You should see Gazebo open with the world representing the circuit in the laboratory anf the five robots at their initial positions. So far, the robots do not move as the controllers have not been launched yet.
+
+[![EdyMobile][robots-in-map]](https://github.com/agatha-d/edymobile_complete)
+
+
+* Launch the controller nodes for all robots:
+  ```sh
+  roslaunch edymobile_complete controller_edymobiles.launch
+  ```
+
+* Run the fleet manager script to send targets to the robots:
+  ```sh
+  cd edymobile_complete/src
+  python3 agatha_generate_goals.py
+  ```
+
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -124,7 +144,7 @@ _For more examples, please refer to the [Documentation](https://github.com/agath
 - [ ] Feature 1
 - [ ] Feature 2
 - [ ] Feature 3
-    - [ ] Nested Feature
+- [ ] Nested Feature
 
 See the [open issues](https://github.com/agatha-d/edymobile_complete/issues) for a full list of proposed features (and known issues).
 
@@ -190,5 +210,7 @@ Project Link: [https://github.com/agatha-d/edymobile_complete](https://github.co
 [license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
 [license-url]: https://github.com/github_username/repo_name/blob/master/LICENSE.txt
 [product-screenshot]: images/screenshot.png
+[robots-in-map]: images/map.png
+[robots-in-world]: images/robots.png
 [Ros.org]: https://img.shields.io/ros/v/humble/vision_msgs
 [Ros-url]: https://www.ros.org/
