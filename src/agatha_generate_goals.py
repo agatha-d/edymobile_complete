@@ -199,7 +199,7 @@ def task_generator(stations):
     #tasks = [[[0,3],[1,2]], [[1,2],[0,3]], [[1,0],[3,2]], [[0,3, 1],[1,2, 0]], [[3, 1,2],[1, 0,3]], [[2, 1,0],[0,3,2]], [[3, 2, 1,0],[1,0,3,2]]]
     #tasks_to_do = random.choice(tasks) # select a random set of tasks
 
-    tasks_to_do = [[0],[3]] #[[2],[1]]#[[2,0],[1, 3]] # values for testing
+    tasks_to_do = [[2,0],[1, 3]] # [[0],[3]] #[[2],[1]]#[[2,0],[1, 3]] # values for testing
    
     return tasks_to_do[0], tasks_to_do[1]
 

@@ -64,6 +64,9 @@
 
 [![EdyMobile][product-screenshot]](https://github.com/agatha-d/edymobile_complete)
 
+This project is a complete package to control a fleet of mobile robots, called Edymobiles, and 
+allow them to transport samples from station to station in a chemistry laboratory for automating research experiments.
+
 
 
 ### Built With
